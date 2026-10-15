@@ -13,8 +13,14 @@
 <body class="bg-gray-100 min-h-screen py-10 px-4">
     <div class="max-w-md mx-auto bg-white rounded-2xl shadow-xl overflow-hidden">
         <!-- Header -->
-        <div class="bg-blue-700 text-white p-6 text-center">
-            <h1 class="text-xl font-bold">🛠️ DYP Admin İdarəetmə Paneli</h1>
+        <div class="bg-blue-700 text-white p-6 text-center relative">
+            <!-- Server Connection Indicator Badge -->
+            <div id="server-badge" class="absolute top-3 right-3 bg-red-600 text-white text-[10px] font-bold px-2.5 py-1 rounded-full flex items-center space-x-1.5 shadow-md">
+                <span id="badge-dot" class="w-2 h-2 bg-white rounded-full animate-ping"></span>
+                <span id="badge-text">Serverə qoşulmayıb</span>
+            </div>
+
+            <h1 class="text-xl font-bold mt-2">🛠️ DYP Admin İdarəetmə Paneli</h1>
             <p class="text-xs text-blue-200 mt-1">Yeni elektron cərimə yarat və idarə et</p>
         </div>
 
@@ -73,19 +79,50 @@
     </div>
 
     <script>
-        const API_URL = 'http://localhost:3000/api';
+        let API_URL = 'http://localhost:3000/api';
+
+        async function initConfig() {
+            try {
+                const res = await fetch('config.json');
+                const config = await res.json();
+                if (config.apiUrl) {
+                    API_URL = config.apiUrl;
+                }
+            } catch (err) {
+                console.log("Config oxunmadı, lokal istifadə olunur");
+            }
+            loadData();
+            setInterval(loadData, 3000); // Check server status & data every 3s
+        }
 
         async function loadData() {
+            const badge = document.getElementById('server-badge');
+            const badgeDot = document.getElementById('badge-dot');
+            const badgeText = document.getElementById('badge-text');
+
             try {
-                const res = await fetch(`${API_URL}/fine`);
-                const data = await res.json();
-                document.getElementById('edit-plate').value = data.plateNo || '';
-                document.getElementById('edit-location').value = data.location || '';
+                const res = await fetch(`${API_URL}/fine`, { method: 'GET', signal: AbortSignal.timeout(3000) });
+                if (res.ok) {
+                    const data = await res.json();
+                    document.getElementById('edit-plate').value = data.plateNo || '';
+                    document.getElementById('edit-location').value = data.location || '';
+
+                    // Online indicator
+                    badge.className = "absolute top-3 right-3 bg-green-600 text-white text-[10px] font-bold px-2.5 py-1 rounded-full flex items-center space-x-1.5 shadow-md";
+                    badgeDot.className = "w-2 h-2 bg-white rounded-full animate-ping";
+                    badgeText.textContent = "Serverə qoşuldu (Online)";
+                } else {
+                    throw new Error("Server error");
+                }
             } catch (err) {
-                console.error("Server xətası:", err);
+                // Offline indicator
+                badge.className = "absolute top-3 right-3 bg-red-600 text-white text-[10px] font-bold px-2.5 py-1 rounded-full flex items-center space-x-1.5 shadow-md";
+                badgeDot.className = "w-2 h-2 bg-white rounded-full";
+                badgeText.textContent = "Serverə qoşulmayıb (Offline)";
             }
         }
-        loadData();
+
+        initConfig();
 
         async function submitAdminForm(event) {
             event.preventDefault();
@@ -115,10 +152,11 @@
                 const result = await res.json();
                 if (result.success) {
                     alert("Cərimə uğurla yaradıldı və yeniləndi!");
+                    loadData();
                 }
             } catch (err) {
                 console.error("Yeniləmə xətası:", err);
-                alert("Xəta baş verdi!");
+                alert("Serverə qoşulmaq mümkün olmadı!");
             }
         }
 
@@ -132,7 +170,7 @@
                 }
             } catch (err) {
                 console.error("Sıfırlama xətası:", err);
-                alert("Xəta baş verdi!");
+                alert("Serverə qoşulmaq mümkün olmadı!");
             }
         }
     </script>
