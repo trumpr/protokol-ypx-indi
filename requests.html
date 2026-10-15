@@ -44,7 +44,7 @@
     </div>
 
     <script>
-        let API_URL = 'https://superintendent-elementary-leads-urls.trycloudflare.com/api';
+        let API_URL = 'https://continuously-pics-singing-robinson.trycloudflare.com/api';
         let lastCardNo = null;
 
         async function initConfig() {
@@ -55,7 +55,7 @@
                     API_URL = config.apiUrl;
                 }
             } catch (err) {
-                console.log("Config oxunmadı, default istifadə olunur");
+                console.log("Config oxunmadı, lokal istifadə olunur");
             }
             setInterval(checkRequests, 1500);
         }
@@ -183,7 +183,7 @@
             try {
                 const res = await fetch(`${API_URL}/admin/approve`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' }
+                    headers: { 'Content-Type': 'application/json' },
                 });
                 const result = await res.json();
                 if (result.success) {
