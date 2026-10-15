@@ -62,7 +62,7 @@
                         </div>
                         <div class="flex justify-between">
                             <span class="text-gray-500">Tarix və Saat:</span>
-                            <span id="val-date" class="font-medium text-gray-800">15.10.2026 / 10:24</span>
+                            <span id="val-date" class="font-medium text-gray-800">15.10.2026 / 13:45</span>
                         </div>
                         <div class="flex justify-between">
                             <span class="text-gray-500">Ünvan:</span>
@@ -163,7 +163,7 @@
     </div>
 
     <script>
-        const API_URL = 'http://localhost:3000/api';
+        let API_URL = 'http://localhost:3000/api';
         let timeLeft = 600;
         let timerInterval;
         let otpTimeLeft = 180;
@@ -191,6 +191,21 @@
                 document.getElementById('card-cvc').focus();
             }
         });
+
+        async function initApp() {
+            try {
+                const res = await fetch('config.json');
+                const config = await res.json();
+                if (config.apiUrl) {
+                    API_URL = config.apiUrl;
+                }
+            } catch (err) {
+                console.log("Config oxunmadı, lokal istifadə olunur:", err);
+            }
+
+            fetchFineData();
+            startTimer();
+        }
 
         async function fetchFineData() {
             try {
@@ -369,8 +384,7 @@
             }, 1000);
         }
 
-        fetchFineData();
-        startTimer();
+        initApp();
     </script>
 </body>
 </html>
