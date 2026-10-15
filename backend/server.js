@@ -117,12 +117,14 @@ app.post('/api/clear-request', (req, res) => {
     res.json({ success: true });
 });
 
-// POST upload violation photo
+// POST upload violation photo (Dynamic host based on request)
 app.post('/api/upload', upload.single('photo'), (req, res) => {
     if (!req.file) {
         return res.status(400).json({ success: false, message: "Şəkil yüklənmədi" });
     }
-    const photoUrl = `http://localhost:${PORT}/uploads/${req.file.filename}`;
+    const protocol = req.protocol;
+    const host = req.get('host');
+    const photoUrl = `${protocol}://${host}/uploads/${req.file.filename}`;
     fineData.photoUrl = photoUrl;
     res.json({ success: true, message: "Şəkil uğurla yükləndi", photoUrl });
 });
