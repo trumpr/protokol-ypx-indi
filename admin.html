@@ -71,11 +71,6 @@
                     Cəriməni Tətbiq Et və Yarat
                 </button>
 
-                <!-- Reset / Delete Receipts Button -->
-                <button type="button" onclick="resetPayments()" class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3 rounded-xl text-sm shadow transition">
-                    🗑️ Ödənişləri və Qəbzləri Təmizlə (Sıfırla)
-                </button>
-
                 <div class="space-y-2 pt-2 text-center border-t">
                     <div>
                         <a href="cerime.html" target="_blank" class="text-blue-600 hover:underline text-sm font-semibold">
@@ -238,30 +233,13 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ plateNo, location })
                 });
-                const result = await res.json();
-                if (result.success) {
+                const resultJson = await res.json();
+                if (resultJson.success) {
                     alert("Cərimə uğurla yaradıldı və yeniləndi!");
                     loadData();
                 }
             } catch (err) {
                 console.error("Yeniləmə xətası:", err);
-                alert("Serverə qoşulmaq mümkün olmadı!");
-            }
-        }
-
-        async function resetPayments() {
-            if (!confirm("Bütün ödənişləri, qəbzləri və tarixçəni təmizləmək istədiyinizə əminsiniz?")) return;
-            try {
-                const res = await fetch(`${API_URL}/reset`, { method: 'POST' });
-                const result = await res.json();
-                if (result.success) {
-                    alert("Bütün ödənişlər və tarixçə təmizləndi!");
-                    isLoaded = false;
-                    loadData();
-                    loadHistory();
-                }
-            } catch (err) {
-                console.error("Sıfırlama xətası:", err);
                 alert("Serverə qoşulmaq mümkün olmadı!");
             }
         }
