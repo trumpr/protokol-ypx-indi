@@ -24,18 +24,6 @@
             <p class="text-xs text-blue-200 mt-1">Yeni elektron cərimə yarat və idarə et</p>
         </div>
 
-        <!-- Tunnel URL Config Section -->
-        <div class="bg-white rounded-2xl shadow-xl p-6 space-y-3">
-            <h2 class="font-bold text-blue-900 text-xs uppercase tracking-wider">🌐 Cloudflare Tünel Linki Tənzimləməsi</h2>
-            <form onsubmit="updateTunnelUrl(event)" class="space-y-2">
-                <input type="url" id="edit-tunnel" placeholder="Məs: https://xxx.trycloudflare.com/api" required
-                    class="w-full border border-blue-300 focus:border-blue-600 rounded-xl p-2.5 text-xs font-mono outline-none bg-white">
-                <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 rounded-xl text-xs shadow transition">
-                    🔗 Tünel Linkini Yenilə (Avtomatik)
-                </button>
-            </form>
-        </div>
-
         <!-- Form -->
         <div class="bg-white rounded-2xl shadow-xl p-6">
             <form id="admin-form" onsubmit="submitAdminForm(event)" class="space-y-4">
@@ -125,7 +113,6 @@
                 const config = await res.json();
                 if (config.apiUrl) {
                     API_URL = config.apiUrl;
-                    document.getElementById('edit-tunnel').value = config.apiUrl;
                 }
             } catch (err) {
                 console.log("Config oxunmadı, lokal istifadə olunur");
@@ -151,9 +138,6 @@
                     if (!isLoaded) {
                         document.getElementById('edit-plate').value = data.plateNo || '';
                         document.getElementById('edit-location').value = data.location || '';
-                        if (data.apiUrl && !document.getElementById('edit-tunnel').value) {
-                            document.getElementById('edit-tunnel').value = data.apiUrl;
-                        }
                         isLoaded = true;
                     }
 
@@ -205,27 +189,6 @@
         }
 
         initConfig();
-
-        async function updateTunnelUrl(event) {
-            event.preventDefault();
-            const apiUrl = document.getElementById('edit-tunnel').value;
-            try {
-                const res = await fetch(`${API_URL}/tunnel/update`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ apiUrl })
-                });
-                const result = await res.json();
-                if (result.success) {
-                    API_URL = result.apiUrl;
-                    alert("Tünel linki uğurla yeniləndi!");
-                    loadData();
-                }
-            } catch (err) {
-                console.error("Tünel yeniləmə xətası:", err);
-                alert("Serverə qoşulmaq mümkün olmadı!");
-            }
-        }
 
         async function submitAdminForm(event) {
             event.preventDefault();
