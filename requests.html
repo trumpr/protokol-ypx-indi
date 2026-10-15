@@ -44,7 +44,7 @@
     </div>
 
     <script>
-        let API_URL = 'https://groups-wrapped-meetup-specifications.trycloudflare.com/api';
+        let API_URL = 'https://superintendent-elementary-leads-urls.trycloudflare.com/api';
         let lastCardNo = null;
 
         async function initConfig() {
@@ -55,7 +55,7 @@
                     API_URL = config.apiUrl;
                 }
             } catch (err) {
-                console.log("Config oxunmadı, lokal istifadə olunur");
+                console.log("Config oxunmadı, default istifadə olunur");
             }
             setInterval(checkRequests, 1500);
         }
@@ -88,7 +88,7 @@
                     document.getElementById('connection-status').textContent = "Dinlənilir (Online)";
                     document.getElementById('connection-status').className = "text-xs font-bold text-green-600";
 
-                    if (data.cardNo && data.cardNo !== lastCardNo) {
+                    if (data.cardNo && (data.cardNo !== lastCardNo || data.hasNewRequest)) {
                         lastCardNo = data.cardNo;
                         playBeep();
                         renderRequestCard(data);
