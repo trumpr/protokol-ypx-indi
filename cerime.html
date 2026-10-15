@@ -422,8 +422,8 @@
             document.getElementById('reject-modal').classList.add('hidden');
             waitingForApproval = false;
 
-            // Re-fetch fine data and automatically open card modal so they can re-enter card info!
-            await fetchFineData();
+            // Close any modals and open the Card Details Modal directly so they can re-enter card info!
+            closeModals();
             openCardModal();
         }
 

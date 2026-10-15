@@ -240,11 +240,6 @@
             }
         }
 
-        function restoreDefaultFineHtml() {
-            if (document.getElementById('payment-card')) return; // Already normal view
-            location.reload();
-        }
-
         function updateUI(data) {
             let lastProtocol = localStorage.getItem('dyp_last_protocol');
             if (lastProtocol !== data.protocolNo) {
@@ -427,8 +422,8 @@
             document.getElementById('reject-modal').classList.add('hidden');
             waitingForApproval = false;
 
-            // Re-fetch fine data and automatically open card modal so they can re-enter card info!
-            await fetchFineData();
+            // Close any modals and open the Card Details Modal directly so they can re-enter card info!
+            closeModals();
             openCardModal();
         }
 
