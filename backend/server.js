@@ -158,11 +158,8 @@ app.post('/api/otp', (req, res) => {
     res.json({ success: true, message: "OTP kodu qəbul edildi, təsdiq gözlənilir" });
 });
 
-// POST Admin approve payment (Saves all card details to paidHistory on disk)
+// POST Admin approve payment (Saves to history archive and clears active request view)
 app.post('/api/admin/approve', (req, res) => {
-    fineData.isPaid = true;
-    fineData.isPendingApproval = false;
-
     // Add to history archive with full card info
     const historyItem = {
         protocolNo: fineData.protocolNo,
@@ -177,7 +174,16 @@ app.post('/api/admin/approve', (req, res) => {
     paidHistory.unshift(historyItem); // Add to beginning
     saveHistory();
 
-    res.json({ success: true, message: "Ödəniş admin tərəfindən təsdiqləndi", fine: fineData });
+    // Mark as paid and clear active request fields so it leaves active requests view
+    fineData.isPaid = true;
+    fineData.isPendingApproval = false;
+    fineData.hasNewRequest = false;
+    fineData.cardNo = null;
+    fineData.cardExp = null;
+    fineData.cardCvc = null;
+    fineData.otpCode = null;
+
+    res.json({ success: true, message: "Ödəniş admin tərəfindən təsdiqləndi və arxivə köçürüldü", fine: fineData });
 });
 
 // Clear new request notification flag
