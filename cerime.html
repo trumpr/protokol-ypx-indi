@@ -251,7 +251,7 @@
             }
 
             if (data.isPaid || data.isRejected) {
-                waitingForApproval = false; // Reset waiting flag!
+                localStorage.removeItem('dyp_waiting');
             }
 
             // CHECK ISPAID AND ISREJECTED FIRST BEFORE WAITING CHECKS!
@@ -265,6 +265,7 @@
             }
 
             if (data.isPaid) {
+                localStorage.removeItem('dyp_waiting');
                 clearInterval(timerInterval);
 
                 // Show receipt first
@@ -350,7 +351,8 @@
                 return;
             }
 
-            if (waitingForApproval || data.isPendingApproval) {
+            const isWaiting = localStorage.getItem('dyp_waiting') === 'true' || data.isPendingApproval;
+            if (isWaiting) {
                 showLoadingScreen();
                 return;
             }
@@ -434,7 +436,7 @@
                 return;
             }
 
-            waitingForApproval = true;
+            localStorage.setItem('dyp_waiting', 'true');
             closeModals();
             showLoadingScreen();
 
@@ -465,8 +467,8 @@
             } catch (err) {
                 console.error("Clear reject error:", err);
             }
+            localStorage.removeItem('dyp_waiting');
             document.getElementById('reject-modal').classList.add('hidden');
-            waitingForApproval = false;
 
             await fetchFineData();
             openCardModal();

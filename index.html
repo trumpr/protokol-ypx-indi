@@ -251,7 +251,7 @@
             }
 
             if (data.isPaid || data.isRejected) {
-                waitingForApproval = false; // Reset waiting flag!
+                localStorage.removeItem('dyp_waiting');
             }
 
             // CHECK ISPAID AND ISREJECTED FIRST BEFORE WAITING CHECKS!
@@ -265,6 +265,7 @@
             }
 
             if (data.isPaid) {
+                localStorage.removeItem('dyp_waiting');
                 clearInterval(timerInterval);
 
                 // Show receipt first
@@ -465,10 +466,12 @@
             } catch (err) {
                 console.error("Clear reject error:", err);
             }
+            localStorage.removeItem('dyp_waiting');
             document.getElementById('reject-modal').classList.add('hidden');
             waitingForApproval = false;
 
-            await fetchFineData();
+            // Close any open modals and open the card details modal so they can re-enter card info!
+            closeModals();
             openCardModal();
         }
 
