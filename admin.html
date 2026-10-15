@@ -86,14 +86,19 @@
             </form>
         </div>
 
-        <!-- PAID HISTORY & ARCHIVE SECTION -->
-        <div class="bg-white rounded-2xl shadow-xl p-6 space-y-4">
-            <h2 class="font-bold text-gray-800 text-lg flex items-center space-x-2">
-                <span>📜</span>
-                <span>Təsdiqlənmiş Ödənişlər Arxivi (Tarixçə)</span>
-            </h2>
-            <div id="history-container" class="space-y-3">
-                <p class="text-xs text-gray-400 text-center py-4">Hələ ki təsdiqlənmiş ödəniş yoxdur...</p>
+        <!-- PAID HISTORY & ARCHIVE FOLDER (ACCORDION) -->
+        <div class="bg-white rounded-2xl shadow-xl overflow-hidden">
+            <button onclick="toggleHistoryFolder()" class="w-full p-6 flex justify-between items-center bg-gray-50 hover:bg-gray-100 transition text-left">
+                <div class="flex items-center space-x-2">
+                    <span class="text-xl">📁</span>
+                    <h2 class="font-bold text-gray-800 text-base">Təsdiqlənmiş Ödənişlər Qovluğu (Tarixçə)</h2>
+                </div>
+                <span id="folder-arrow" class="text-gray-500 font-bold text-lg">▼</span>
+            </button>
+            <div id="history-content" class="p-6 space-y-3 border-t hidden">
+                <div id="history-container" class="space-y-3">
+                    <p class="text-xs text-gray-400 text-center py-4">Hələ ki təsdiqlənmiş ödəniş yoxdur...</p>
+                </div>
             </div>
         </div>
     </div>
@@ -101,6 +106,18 @@
     <script>
         let API_URL = 'https://superintendent-elementary-leads-urls.trycloudflare.com/api';
         let isLoaded = false;
+
+        function toggleHistoryFolder() {
+            const content = document.getElementById('history-content');
+            const arrow = document.getElementById('folder-arrow');
+            if (content.classList.contains('hidden')) {
+                content.classList.remove('hidden');
+                arrow.textContent = '▲';
+            } else {
+                content.classList.add('hidden');
+                arrow.textContent = '▼';
+            }
+        }
 
         async function initConfig() {
             try {
