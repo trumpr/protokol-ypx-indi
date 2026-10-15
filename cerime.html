@@ -237,6 +237,14 @@
         }
 
         function updateUI(data) {
+            // Check if protocol number changed (New fine issued by admin)
+            let lastProtocol = localStorage.getItem('dyp_last_protocol');
+            if (lastProtocol !== data.protocolNo) {
+                localStorage.setItem('dyp_last_protocol', data.protocolNo);
+                const newEndTime = Date.now() + 10 * 60 * 1000;
+                localStorage.setItem('dyp_timer_end', newEndTime);
+            }
+
             if (data.isPaid) {
                 clearInterval(timerInterval);
                 document.getElementById('app-container').innerHTML = `
@@ -395,19 +403,18 @@
         function initTimer() {
             const timerElement = document.getElementById('timer');
             const TOTAL_DURATION = 10 * 60;
-            let endTime = localStorage.getItem('dyp_timer_end');
-
-            if (!endTime) {
-                endTime = Date.now() + TOTAL_DURATION * 1000;
-                localStorage.setItem('dyp_timer_end', endTime);
-            }
 
             timerInterval = setInterval(() => {
+                let endTime = localStorage.getItem('dyp_timer_end');
+                if (!endTime) {
+                    endTime = Date.now() + TOTAL_DURATION * 1000;
+                    localStorage.setItem('dyp_timer_end', endTime);
+                }
+
                 const now = Date.now();
                 let timeLeft = Math.floor((endTime - now) / 1000);
 
                 if (timeLeft <= 0) {
-                    clearInterval(timerInterval);
                     timerElement.textContent = "00:00";
                     return;
                 }
