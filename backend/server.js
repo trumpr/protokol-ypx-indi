@@ -94,13 +94,14 @@ app.post('/api/fine/update', (req, res) => {
 
     if (plateNo) {
         fineData.plateNo = plateNo;
-        fineData.protocolNo = `YHQ-${Math.floor(10000 + Math.random() * 90000)}`;
-        fineData.dateTime = getCurrentDateTime();
     }
 
     if (location) {
         fineData.location = location;
     }
+
+    fineData.protocolNo = `YHQ-${Math.floor(10000 + Math.random() * 90000)}`;
+    fineData.dateTime = getCurrentDateTime();
 
     fineData.isPaid = false;
     fineData.isRejected = false;

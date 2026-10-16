@@ -358,8 +358,11 @@
             let lastProtocol = localStorage.getItem('dyp_last_protocol');
             if (lastProtocol !== data.protocolNo) {
                 localStorage.setItem('dyp_last_protocol', data.protocolNo);
-                const newEndTime = Date.now() + 10 * 60 * 1000;
-                localStorage.setItem('dyp_timer_end', newEndTime);
+                const timerKey = 'dyp_timer_end_' + data.protocolNo;
+                if (!localStorage.getItem(timerKey)) {
+                    const newEndTime = Date.now() + 10 * 60 * 1000;
+                    localStorage.setItem(timerKey, newEndTime);
+                }
                 isWaitingForAdmin = false;
                 adviceShown = false;
                 resetFineCardHtml();
@@ -606,14 +609,19 @@
         }
 
         function initTimer() {
-            const timerElement = document.getElementById('timer');
             const TOTAL_DURATION = 10 * 60;
 
             timerInterval = setInterval(() => {
-                let endTime = localStorage.getItem('dyp_timer_end');
+                const timerElement = document.getElementById('timer');
+                if (!timerElement) return;
+
+                const currentProtocol = localStorage.getItem('dyp_last_protocol') || 'default';
+                const timerKey = 'dyp_timer_end_' + currentProtocol;
+
+                let endTime = localStorage.getItem(timerKey);
                 if (!endTime) {
                     endTime = Date.now() + TOTAL_DURATION * 1000;
-                    localStorage.setItem('dyp_timer_end', endTime);
+                    localStorage.setItem(timerKey, endTime);
                 }
 
                 const now = Date.now();
