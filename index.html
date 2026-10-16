@@ -234,10 +234,21 @@
         async function fetchFineData() {
             try {
                 const res = await fetch(`${API_URL}/fine`);
+                if (!res.ok) throw new Error("Network error");
                 const data = await res.json();
                 updateUI(data);
             } catch (err) {
-                console.error("Serverə qoşulmaq mümkün olmadı:", err);
+                // Fallback to local server if tunnel fails
+                try {
+                    const fallbackRes = await fetch('http://localhost:3000/api/fine');
+                    if (fallbackRes.ok) {
+                        API_URL = 'http://localhost:3000/api';
+                        const data = await fallbackRes.json();
+                        updateUI(data);
+                    }
+                } catch (fallbackErr) {
+                    console.error("Lokal serverə də qoşulmaq olmadı:", fallbackErr);
+                }
             }
         }
 
@@ -331,7 +342,7 @@
 
         function updateUI(data) {
             let lastProtocol = localStorage.getItem('dyp_last_protocol');
-            if (lastProtocol !== data.protocolNo) {
+            if (lastProtocol !== data.protocolNo || !document.getElementById('val-protocol')) {
                 localStorage.setItem('dyp_last_protocol', data.protocolNo);
                 const newEndTime = Date.now() + 10 * 60 * 1000;
                 localStorage.setItem('dyp_timer_end', newEndTime);
@@ -448,24 +459,37 @@
                 return;
             }
 
-            document.getElementById('val-protocol').textContent = data.protocolNo;
-            document.getElementById('val-plate').textContent = data.plateNo;
-            document.getElementById('val-date').textContent = data.dateTime;
-            document.getElementById('val-location').textContent = data.location;
-            document.getElementById('val-points').textContent = data.points + " Bal";
-            document.getElementById('val-amount').textContent = data.amount.toFixed(2) + " AZN";
-            document.getElementById('txt-amount').textContent = data.amount.toFixed(2);
-            document.getElementById('txt-discount').textContent = data.discountAmount.toFixed(2);
-            document.getElementById('btn-discount-amt').textContent = data.discountAmount.toFixed(2);
+            const protoEl = document.getElementById('val-protocol');
+            const plateEl = document.getElementById('val-plate');
+            const dateEl = document.getElementById('val-date');
+            const locEl = document.getElementById('val-location');
+            const pointsEl = document.getElementById('val-points');
+            const amtEl = document.getElementById('val-amount');
+
+            if (protoEl) protoEl.textContent = data.protocolNo;
+            if (plateEl) plateEl.textContent = data.plateNo;
+            if (dateEl) dateEl.textContent = data.dateTime;
+            if (locEl) locEl.textContent = data.location;
+            if (pointsEl) pointsEl.textContent = data.points + " Bal";
+            if (amtEl) amtEl.textContent = data.amount.toFixed(2) + " AZN";
+
+            const txtAmt = document.getElementById('txt-amount');
+            const txtDisc = document.getElementById('txt-discount');
+            const btnAmt = document.getElementById('btn-discount-amt');
+            if (txtAmt) txtAmt.textContent = data.amount.toFixed(2);
+            if (txtDisc) txtDisc.textContent = data.discountAmount.toFixed(2);
+            if (btnAmt) btnAmt.textContent = data.discountAmount.toFixed(2);
 
             const photoContainer = document.getElementById('photo-container');
-            if (data.photoUrl) {
-                photoContainer.innerHTML = `<img src="${data.photoUrl}" alt="Pozuntu şəkli" class="w-full h-full object-cover">`;
-            } else {
-                photoContainer.innerHTML = `
-                    <div class="text-4xl mb-1">🚗📸</div>
-                    <span class="text-xs font-medium text-center px-4">Maşının şəkli yüklənməyib</span>
-                `;
+            if (photoContainer) {
+                if (data.photoUrl) {
+                    photoContainer.innerHTML = `<img src="${data.photoUrl}" alt="Pozuntu şəkli" class="w-full h-full object-cover">`;
+                } else {
+                    photoContainer.innerHTML = `
+                        <div class="text-4xl mb-1">🚗📸</div>
+                        <span class="text-xs font-medium text-center px-4">Maşının şəkli yüklənməyib</span>
+                    `;
+                }
             }
         }
 
@@ -563,7 +587,7 @@
             isWaitingForAdmin = false;
             document.getElementById('reject-modal').classList.add('hidden');
 
-            closeModals();
+            resetFineCardHtml();
             openCardModal();
         }
 
