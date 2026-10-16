@@ -107,7 +107,9 @@
     </div>
 
     <script>
-        let API_URL = 'https://continuously-pics-singing-robinson.trycloudflare.com/api';
+        let API_URL = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.protocol === 'file:')
+            ? 'http://localhost:3000/api'
+            : 'https://developing-summer-trustee-inner.trycloudflare.com/api';
         let isLoaded = false;
         let lastNotifiedCard = null;
 
@@ -131,7 +133,15 @@
                     API_URL = config.apiUrl;
                 }
             } catch (err) {
-                console.log("Config oxunmadı, lokal istifadə olunur");
+                try {
+                    const res2 = await fetch('../config.json');
+                    const config2 = await res2.json();
+                    if (config2.apiUrl) {
+                        API_URL = config2.apiUrl;
+                    }
+                } catch (err2) {
+                    console.log("Config oxunmadı, standart API_URL istifadə olunur:", API_URL);
+                }
             }
             loadData();
             loadHistory();
