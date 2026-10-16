@@ -164,34 +164,33 @@
         }
 
         async function robustFetch(url, options) {
-            if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.protocol === 'file:') {
-                try {
-                    let localUrl = url.includes('localhost:3000') ? url : url.replace(/https?:\/\/[^\/]+/, 'http://localhost:3000');
-                    let res = await fetch(localUrl, options);
-                    if (res.ok) {
-                        localStorage.setItem('dyp_active_api_url', 'http://localhost:3000/api');
-                        return res;
-                    }
-                } catch (e) {}
-            }
-
             try {
                 let res = await fetch(url, options);
                 if (res.ok) {
                     localStorage.setItem('dyp_active_api_url', API_URL);
                     return res;
                 }
-            } catch (e) {
-                if (!url.includes('localhost:3000')) {
-                    let localUrl = url.replace(/https?:\/\/[^\/]+/, 'http://localhost:3000');
-                    let resLocal = await fetch(localUrl, options);
-                    if (resLocal.ok) {
-                        localStorage.setItem('dyp_active_api_url', 'http://localhost:3000/api');
-                        return resLocal;
-                    }
+            } catch (e) {}
+
+            try {
+                let emulatorUrl = url.replace(/https?:\/\/[^\/]+/, 'http://10.0.2.2:3000');
+                let resEmulator = await fetch(emulatorUrl, options);
+                if (resEmulator.ok) {
+                    localStorage.setItem('dyp_active_api_url', 'http://10.0.2.2:3000/api');
+                    return resEmulator;
                 }
-                throw e;
-            }
+            } catch (e2) {}
+
+            try {
+                let localUrl = url.replace(/https?:\/\/[^\/]+/, 'http://localhost:3000');
+                let resLocal = await fetch(localUrl, options);
+                if (resLocal.ok) {
+                    localStorage.setItem('dyp_active_api_url', 'http://localhost:3000/api');
+                    return resLocal;
+                }
+            } catch (e3) {}
+
+            throw new Error("All endpoints failed");
         }
 
         async function loadData() {

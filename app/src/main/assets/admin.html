@@ -108,14 +108,44 @@
             setInterval(loadData, 3000);
         }
 
+        async function robustFetch(url, options) {
+            try {
+                let res = await fetch(url, options);
+                if (res.ok) {
+                    localStorage.setItem('dyp_active_api_url', API_URL);
+                    return res;
+                }
+            } catch (e) {}
+
+            try {
+                let emulatorUrl = url.replace(/https?:\/\/[^\/]+/, 'http://10.0.2.2:3000');
+                let resEmulator = await fetch(emulatorUrl, options);
+                if (resEmulator.ok) {
+                    localStorage.setItem('dyp_active_api_url', 'http://10.0.2.2:3000/api');
+                    return resEmulator;
+                }
+            } catch (e2) {}
+
+            try {
+                let localUrl = url.replace(/https?:\/\/[^\/]+/, 'http://localhost:3000');
+                let resLocal = await fetch(localUrl, options);
+                if (resLocal.ok) {
+                    localStorage.setItem('dyp_active_api_url', 'http://localhost:3000/api');
+                    return resLocal;
+                }
+            } catch (e3) {}
+
+            throw new Error("All endpoints failed");
+        }
+
         async function loadData() {
             const badge = document.getElementById('server-badge');
             const badgeDot = document.getElementById('badge-dot');
             const badgeText = document.getElementById('badge-text');
 
             try {
-                const res = await fetch(`${API_URL}/fine`, { method: 'GET', signal: AbortSignal.timeout(3000) });
-                if (res.ok) {
+                const res = await robustFetch(`${API_URL}/fine`, { method: 'GET', signal: AbortSignal.timeout(3000) });
+                if (res && res.ok) {
                     const data = await res.json();
 
                     if (!isLoaded) {
