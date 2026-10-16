@@ -56,7 +56,7 @@ let fineData = {
     otpCode: null,
     hasNewRequest: false,
     isPendingApproval: false,
-    apiUrl: "https://developing-summer-trustee-inner.trycloudflare.com/api"
+    apiUrl: "https://chester-police-fragrance-initiated.trycloudflare.com/api"
 };
 
 // Persistent History Archive on Disk
