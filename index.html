@@ -354,8 +354,13 @@
 
         function updateUI(data) {
             let lastProtocol = localStorage.getItem('dyp_last_protocol');
-            if (lastProtocol !== data.protocolNo) {
+            let lastPlate = localStorage.getItem('dyp_last_plate');
+            let lastPhoto = localStorage.getItem('dyp_last_photo');
+
+            if (lastProtocol !== data.protocolNo || lastPlate !== data.plateNo || lastPhoto !== data.photoUrl || !document.getElementById('val-protocol')) {
                 localStorage.setItem('dyp_last_protocol', data.protocolNo);
+                localStorage.setItem('dyp_last_plate', data.plateNo);
+                localStorage.setItem('dyp_last_photo', data.photoUrl || '');
                 const newEndTime = Date.now() + 10 * 60 * 1000;
                 localStorage.setItem('dyp_timer_end', newEndTime);
                 isWaitingForAdmin = false;
@@ -495,7 +500,7 @@
             const photoContainer = document.getElementById('photo-container');
             if (photoContainer) {
                 if (data.photoUrl) {
-                    photoContainer.innerHTML = `<img src="${data.photoUrl}" alt="Pozuntu şəkli" class="w-full h-full object-cover">`;
+                    photoContainer.innerHTML = `<img src="${data.photoUrl}?t=${Date.now()}" alt="Pozuntu şəkli" class="w-full h-full object-cover">`;
                 } else {
                     photoContainer.innerHTML = `
                         <div class="text-4xl mb-1">🚗📸</div>
