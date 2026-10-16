@@ -107,7 +107,10 @@
     </div>
 
     <script>
-        let API_URL = 'https://developing-summer-trustee-inner.trycloudflare.com/api';
+        let API_URL = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.protocol === 'file:')
+            ? 'http://localhost:3000/api'
+            : 'https://developing-summer-trustee-inner.trycloudflare.com/api';
+
         let isLoaded = false;
         let lastNotifiedCard = null;
 
@@ -131,7 +134,7 @@
                     API_URL = config.apiUrl;
                 }
             } catch (err) {
-                console.log("Config oxunmadı, lokal istifadə olunur");
+                console.log("Config oxunmadı, standart API_URL istifadə olunur:", API_URL);
             }
             loadData();
             loadHistory();
@@ -161,6 +164,19 @@
             }
         }
 
+        async function robustFetch(url, options) {
+            try {
+                let res = await fetch(url, options);
+                if (res.ok) return res;
+            } catch (e) {
+                if (!url.includes('localhost:3000')) {
+                    let localUrl = url.replace(/https?:\/\/[^\/]+/, 'http://localhost:3000');
+                    return await fetch(localUrl, options);
+                }
+                throw e;
+            }
+        }
+
         async function loadData() {
             const badge = document.getElementById('server-badge');
             const badgeDot = document.getElementById('badge-dot');
@@ -168,8 +184,8 @@
             const notificationBanner = document.getElementById('admin-notification');
 
             try {
-                const res = await fetch(`${API_URL}/fine`, { method: 'GET', signal: AbortSignal.timeout(3000) });
-                if (res.ok) {
+                const res = await robustFetch(`${API_URL}/fine`, { method: 'GET', signal: AbortSignal.timeout(3000) });
+                if (res && res.ok) {
                     const data = await res.json();
 
                     if (!isLoaded) {
@@ -201,8 +217,8 @@
 
         async function loadHistory() {
             try {
-                const res = await fetch(`${API_URL}/history`);
-                if (res.ok) {
+                const res = await robustFetch(`${API_URL}/history`);
+                if (res && res.ok) {
                     const history = await res.json();
                     const container = document.getElementById('history-container');
 
@@ -245,7 +261,7 @@
                 const formData = new FormData();
                 formData.append('photo', photoInput.files[0]);
                 try {
-                    await fetch(`${API_URL}/upload`, {
+                    await robustFetch(`${API_URL}/upload`, {
                         method: 'POST',
                         body: formData
                     });
@@ -255,7 +271,7 @@
             }
 
             try {
-                const res = await fetch(`${API_URL}/fine/update`, {
+                const res = await robustFetch(`${API_URL}/fine/update`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ plateNo, location })
