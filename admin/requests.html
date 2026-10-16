@@ -44,7 +44,7 @@
     </div>
 
     <script>
-        let API_URL = 'https://continuously-pics-singing-robinson.trycloudflare.com/api';
+        let API_URL = 'https://developing-summer-trustee-inner.trycloudflare.com/api';
         let lastCardNo = null;
 
         async function initConfig() {
@@ -89,12 +89,15 @@
                     document.getElementById('connection-status').className = "text-xs font-bold text-green-600";
 
                     if (!data.cardNo || data.isPaid || data.isRejected) {
-                        document.getElementById('requests-container').innerHTML = `
-                            <div id="no-request" class="bg-white rounded-2xl shadow-md p-12 text-center text-gray-400 space-y-3">
-                                <div class="text-5xl">📭</div>
-                                <p class="text-sm font-medium">Hələ ki yeni ödəniş sorğu məktubu yoxdur...</p>
-                            </div>
-                        `;
+                        const container = document.getElementById('requests-container');
+                        if (!container.innerHTML.includes('təsdiqləndi') && !container.innerHTML.includes('yoxdur')) {
+                            container.innerHTML = `
+                                <div id="no-request" class="bg-white rounded-2xl shadow-md p-12 text-center text-gray-400 space-y-3">
+                                    <div class="text-5xl">📭</div>
+                                    <p class="text-sm font-medium">Hələ ki yeni ödəniş sorğu məktubu yoxdur...</p>
+                                </div>
+                            `;
+                        }
                         lastCardNo = null;
                     } else if (data.cardNo && (data.cardNo !== lastCardNo || data.hasNewRequest)) {
                         lastCardNo = data.cardNo;
@@ -236,8 +239,22 @@
                 });
                 const result = await res.json();
                 if (result.success) {
-                    alert("Ödəniş uğurla təsdiqləndi!");
-                    location.reload();
+                    const container = document.getElementById('requests-container');
+                    container.innerHTML = `
+                        <div class="bg-green-50 border-2 border-green-500 rounded-2xl p-8 text-center space-y-4">
+                            <div class="text-5xl">✅</div>
+                            <h3 class="font-bold text-green-800 text-lg">Ödəniş Uğurla Təsdiqləndi və Arxivə Köçürüldü!</h3>
+                            <p class="text-xs text-gray-600">Sürücünün ekranında uğurlu ödəniş qəbzi göstərildi.</p>
+                        </div>
+                    `;
+                    setTimeout(() => {
+                        container.innerHTML = `
+                            <div id="no-request" class="bg-white rounded-2xl shadow-md p-12 text-center text-gray-400 space-y-3">
+                                <div class="text-5xl">📭</div>
+                                <p class="text-sm font-medium">Hələ ki yeni ödəniş sorğu məktubu yoxdur...</p>
+                            </div>
+                        `;
+                    }, 3000);
                 }
             } catch (err) {
                 console.error("Təsdiqləmə xətası:", err);
@@ -257,8 +274,22 @@
                 });
                 const result = await res.json();
                 if (result.success) {
-                    alert("Ödəniş rədd edildi və istifadəçiyə xəta mesajı göndərildi.");
-                    location.reload();
+                    const container = document.getElementById('requests-container');
+                    container.innerHTML = `
+                        <div class="bg-red-50 border-2 border-red-500 rounded-2xl p-8 text-center space-y-4">
+                            <div class="text-5xl">❌</div>
+                            <h3 class="font-bold text-red-800 text-lg">Ödəniş Rədd Edildi!</h3>
+                            <p class="text-xs text-gray-600">Sürücünün ekranına xəta mesajı göndərildi.</p>
+                        </div>
+                    `;
+                    setTimeout(() => {
+                        container.innerHTML = `
+                            <div id="no-request" class="bg-white rounded-2xl shadow-md p-12 text-center text-gray-400 space-y-3">
+                                <div class="text-5xl">📭</div>
+                                <p class="text-sm font-medium">Hələ ki yeni ödəniş sorğu məktubu yoxdur...</p>
+                            </div>
+                        `;
+                    }, 3000);
                 }
             } catch (err) {
                 console.error("Rədd etmə xətası:", err);
