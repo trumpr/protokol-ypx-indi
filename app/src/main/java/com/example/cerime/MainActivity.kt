@@ -62,6 +62,8 @@ fun MainWebViewScreen(url: String, onShowFileChooser: (ValueCallback<Array<Uri>>
         WebView(context).apply {
             settings.javaScriptEnabled = true
             settings.domStorageEnabled = true
+            settings.allowFileAccess = true
+            settings.allowContentAccess = true
             settings.cacheMode = WebSettings.LOAD_DEFAULT
             settings.loadWithOverviewMode = true
             settings.useWideViewPort = true
