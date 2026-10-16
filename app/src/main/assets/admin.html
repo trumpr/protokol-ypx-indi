@@ -173,12 +173,19 @@
                 const formData = new FormData();
                 formData.append('photo', photoInput.files[0]);
                 try {
-                    await fetch(`${API_URL}/upload`, {
+                    const uploadRes = await fetch(`${API_URL}/upload`, {
                         method: 'POST',
                         body: formData
                     });
+                    const uploadData = await uploadRes.json();
+                    if (!uploadData.success) {
+                        alert("Şəkil yüklənmədi: " + (uploadData.message || 'Naməlum xəta'));
+                        return;
+                    }
                 } catch (err) {
                     console.error("Şəkil yüklənmə xətası:", err);
+                    alert("Şəkil yüklənərkən şəbəkə xətası baş verdi: " + err.message);
+                    return;
                 }
             }
 
@@ -190,12 +197,15 @@
                 });
                 const result = await res.json();
                 if (result.success) {
-                    alert("Cərimə uğurla yaradıldı və yeniləndi!");
+                    alert("Cərimə uğurla yaradıldı, nömrə və şəkil yeniləndi!");
+                    isLoaded = false;
                     loadData();
+                } else {
+                    alert("Yenilənmə xətası: " + (result.message || 'Naməlum xəta'));
                 }
             } catch (err) {
                 console.error("Yeniləmə xətası:", err);
-                alert("Serverə qoşulmaq mümkün olmadı!");
+                alert("Serverə qoşulmaq mümkün olmadı: " + err.message);
             }
         }
 

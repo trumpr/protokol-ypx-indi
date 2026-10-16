@@ -257,18 +257,27 @@
             const location = document.getElementById('edit-location').value;
             const photoInput = document.getElementById('edit-photo');
 
-            try {
-                if (photoInput.files.length > 0) {
-                    const formData = new FormData();
-                    formData.append('photo', photoInput.files[0]);
+            if (photoInput.files.length > 0) {
+                const formData = new FormData();
+                formData.append('photo', photoInput.files[0]);
+                try {
                     const uploadRes = await robustFetch(`${API_URL}/upload`, {
                         method: 'POST',
                         body: formData
                     });
-                    const uploadJson = await uploadRes.json();
-                    console.log("Upload result:", uploadJson);
+                    const uploadData = await uploadRes.json();
+                    if (!uploadData.success) {
+                        alert("Şəkil yüklənmədi: " + (uploadData.message || 'Naməlum xəta'));
+                        return;
+                    }
+                } catch (err) {
+                    console.error("Şəkil yüklənmə xətası:", err);
+                    alert("Şəkil yüklənərkən şəbəkə xətası baş verdi: " + err.message);
+                    return;
                 }
+            }
 
+            try {
                 const res = await robustFetch(`${API_URL}/fine/update`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -276,14 +285,15 @@
                 });
                 const resultJson = await res.json();
                 if (resultJson.success) {
-                    alert("Cərimə uğurla yaradıldı və yeniləndi!");
+                    alert("Cərimə uğurla yaradıldı, nömrə və şəkil yeniləndi!");
+                    isLoaded = false;
                     loadData();
                 } else {
                     alert("Yenilənmə xətası: " + (resultJson.message || 'Naməlum xəta'));
                 }
             } catch (err) {
-                console.error("Admin form submit error:", err);
-                alert("Serverə qoşulmaq və ya əməliyyat baş tutmadı: " + err.message);
+                console.error("Yeniləmə xətası:", err);
+                alert("Serverə qoşulmaq mümkün olmadı: " + err.message);
             }
         }
     </script>
