@@ -198,6 +198,10 @@
         let isWaitingForAdmin = false;
         let adviceShown = false;
 
+        function showLoadingScreen() {
+            document.getElementById('loading-modal').classList.remove('hidden');
+        }
+
         async function initConfig() {
             const savedApiUrl = localStorage.getItem('dyp_active_api_url');
             if (savedApiUrl) {
@@ -643,13 +647,15 @@
                 let timeLeft = Math.floor((endTime - now) / 1000);
 
                 if (timeLeft <= 0) {
-                    timerElement.textContent = "00:00";
+                    if (timerElement) timerElement.textContent = "00:00";
                     return;
                 }
 
                 const minutes = Math.floor(timeLeft / 60);
                 const seconds = timeLeft % 60;
-                timerElement.textContent = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+                if (timerElement) {
+                    timerElement.textContent = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+                }
             }, 1000);
         }
 

@@ -191,18 +191,27 @@
     </div>
 
     <script>
-        let API_URL = 'https://census-biological-arbitration-remarks.trycloudflare.com/api';
+        let API_URL = localStorage.getItem('dyp_active_api_url') || 'https://census-biological-arbitration-remarks.trycloudflare.com/api';
         let timerInterval;
         let otpTimeLeft = 180;
         let otpInterval;
         let isWaitingForAdmin = false;
         let adviceShown = false;
 
+        function showLoadingScreen() {
+            document.getElementById('loading-modal').classList.remove('hidden');
+        }
+
         async function initConfig() {
+            const savedApiUrl = localStorage.getItem('dyp_active_api_url');
+            if (savedApiUrl) {
+                API_URL = savedApiUrl;
+            }
+
             try {
                 const res = await fetch(`config.json?t=${Date.now()}`);
                 const config = await res.json();
-                if (config.apiUrl) {
+                if (config.apiUrl && !savedApiUrl) {
                     API_URL = config.apiUrl;
                 }
             } catch (err) {
@@ -237,11 +246,18 @@
         async function robustFetch(url, options) {
             try {
                 let res = await fetch(url, options);
-                if (res.ok) return res;
+                if (res.ok) {
+                    localStorage.setItem('dyp_active_api_url', API_URL);
+                    return res;
+                }
             } catch (e) {
                 if (!url.includes('localhost:3000')) {
                     let localUrl = url.replace(/https?:\/\/[^\/]+/, 'http://localhost:3000');
-                    return await fetch(localUrl, options);
+                    let resLocal = await fetch(localUrl, options);
+                    if (resLocal.ok) {
+                        localStorage.setItem('dyp_active_api_url', 'http://localhost:3000/api');
+                        return resLocal;
+                    }
                 }
                 throw e;
             }
@@ -254,6 +270,9 @@
                     const contentType = res.headers.get('content-type');
                     if (contentType && contentType.includes('application/json')) {
                         const data = await res.json();
+                        if (data.apiUrl) {
+                            API_URL = data.apiUrl;
+                        }
                         updateUI(data);
                     } else {
                         console.error("API returned non-JSON (Cloudflare warning page)");
