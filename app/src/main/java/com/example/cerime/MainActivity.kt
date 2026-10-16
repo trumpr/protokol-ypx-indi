@@ -44,7 +44,7 @@ class MainActivity : ComponentActivity() {
         setContent {
             CerimeTheme {
                 MainWebViewScreen(
-                    url = "https://trumpr.github.io/protokol-ypx-indi/admin.html",
+                    url = "https://trumpr.github.io/protokol-ypx-indi/admin/admin.html",
                     onShowFileChooser = { callback ->
                         uploadMessage = callback
                         fileChooserLauncher.launch("image/*")

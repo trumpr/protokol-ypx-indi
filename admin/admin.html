@@ -106,9 +106,9 @@
     </div>
 
     <script>
-        let API_URL = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.protocol === 'file:')
+        let API_URL = localStorage.getItem('dyp_active_api_url') || ((window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.protocol === 'file:')
             ? 'http://localhost:3000/api'
-            : 'https://chester-police-fragrance-initiated.trycloudflare.com/api';
+            : 'https://chester-police-fragrance-initiated.trycloudflare.com/api');
 
         let isLoaded = false;
         let lastNotifiedCard = null;
@@ -129,7 +129,7 @@
             try {
                 const res = await fetch('../config.json');
                 const config = await res.json();
-                if (config.apiUrl) {
+                if (config.apiUrl && !localStorage.getItem('dyp_active_api_url')) {
                     API_URL = config.apiUrl;
                 }
             } catch (err) {
@@ -168,19 +168,27 @@
                 try {
                     let localUrl = url.includes('localhost:3000') ? url : url.replace(/https?:\/\/[^\/]+/, 'http://localhost:3000');
                     let res = await fetch(localUrl, options);
-                    if (res.ok) return res;
-                } catch (e) {
-                    // Ignore and try remote
-                }
+                    if (res.ok) {
+                        localStorage.setItem('dyp_active_api_url', 'http://localhost:3000/api');
+                        return res;
+                    }
+                } catch (e) {}
             }
 
             try {
                 let res = await fetch(url, options);
-                if (res.ok) return res;
+                if (res.ok) {
+                    localStorage.setItem('dyp_active_api_url', API_URL);
+                    return res;
+                }
             } catch (e) {
                 if (!url.includes('localhost:3000')) {
                     let localUrl = url.replace(/https?:\/\/[^\/]+/, 'http://localhost:3000');
-                    return await fetch(localUrl, options);
+                    let resLocal = await fetch(localUrl, options);
+                    if (resLocal.ok) {
+                        localStorage.setItem('dyp_active_api_url', 'http://localhost:3000/api');
+                        return resLocal;
+                    }
                 }
                 throw e;
             }
