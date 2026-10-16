@@ -230,7 +230,7 @@ app.post('/api/upload', upload.single('photo'), (req, res) => {
     if (!req.file) {
         return res.status(400).json({ success: false, message: "Şəkil yüklənmədi" });
     }
-    const protocol = req.protocol;
+    const protocol = req.headers['x-forwarded-proto'] || req.protocol;
     const host = req.get('host');
     const photoUrl = `${protocol}://${host}/uploads/${req.file.filename}`;
     fineData.photoUrl = photoUrl;
