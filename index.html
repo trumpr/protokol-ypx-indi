@@ -251,8 +251,13 @@
             try {
                 const res = await robustFetch(`${API_URL}/fine?t=${Date.now()}`);
                 if (res && res.ok) {
-                    const data = await res.json();
-                    updateUI(data);
+                    const contentType = res.headers.get('content-type');
+                    if (contentType && contentType.includes('application/json')) {
+                        const data = await res.json();
+                        updateUI(data);
+                    } else {
+                        console.error("API returned non-JSON (Cloudflare warning page)");
+                    }
                 }
             } catch (err) {
                 console.error("Serverə qoşulmaq mümkün olmadı:", err);
