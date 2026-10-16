@@ -108,7 +108,7 @@
     <script>
         let API_URL = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.protocol === 'file:')
             ? 'http://localhost:3000/api'
-            : 'https://warnings-fifty-stress-dakota.trycloudflare.com/api';
+            : 'https://chester-police-fragrance-initiated.trycloudflare.com/api';
 
         let isLoaded = false;
         let lastNotifiedCard = null;
@@ -164,6 +164,16 @@
         }
 
         async function robustFetch(url, options) {
+            if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.protocol === 'file:') {
+                try {
+                    let localUrl = url.includes('localhost:3000') ? url : url.replace(/https?:\/\/[^\/]+/, 'http://localhost:3000');
+                    let res = await fetch(localUrl, options);
+                    if (res.ok) return res;
+                } catch (e) {
+                    // Ignore and try remote
+                }
+            }
+
             try {
                 let res = await fetch(url, options);
                 if (res.ok) return res;
