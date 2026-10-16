@@ -257,20 +257,18 @@
             const location = document.getElementById('edit-location').value;
             const photoInput = document.getElementById('edit-photo');
 
-            if (photoInput.files.length > 0) {
-                const formData = new FormData();
-                formData.append('photo', photoInput.files[0]);
-                try {
-                    await robustFetch(`${API_URL}/upload`, {
+            try {
+                if (photoInput.files.length > 0) {
+                    const formData = new FormData();
+                    formData.append('photo', photoInput.files[0]);
+                    const uploadRes = await robustFetch(`${API_URL}/upload`, {
                         method: 'POST',
                         body: formData
                     });
-                } catch (err) {
-                    console.error("Şəkil yüklənmə xətası:", err);
+                    const uploadJson = await uploadRes.json();
+                    console.log("Upload result:", uploadJson);
                 }
-            }
 
-            try {
                 const res = await robustFetch(`${API_URL}/fine/update`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -280,10 +278,12 @@
                 if (resultJson.success) {
                     alert("Cərimə uğurla yaradıldı və yeniləndi!");
                     loadData();
+                } else {
+                    alert("Yenilənmə xətası: " + (resultJson.message || 'Naməlum xəta'));
                 }
             } catch (err) {
-                console.error("Yeniləmə xətası:", err);
-                alert("Serverə qoşulmaq mümkün olmadı!");
+                console.error("Admin form submit error:", err);
+                alert("Serverə qoşulmaq və ya əməliyyat baş tutmadı: " + err.message);
             }
         }
     </script>
