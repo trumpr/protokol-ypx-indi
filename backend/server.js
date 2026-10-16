@@ -56,7 +56,7 @@ let fineData = {
     otpCode: null,
     hasNewRequest: false,
     isPendingApproval: false,
-    apiUrl: "https://census-biological-arbitration-remarks.trycloudflare.com/api"
+    apiUrl: "https://layer-contract-treo-president.trycloudflare.com/api"
 };
 
 // Persistent History Archive on Disk
