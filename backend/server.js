@@ -10,6 +10,7 @@ const PORT = process.env.PORT || 3000;
 app.use(cors());
 app.use(express.json());
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+app.use(express.static(path.join(__dirname, '../')));
 
 const uploadDir = path.join(__dirname, 'uploads');
 if (!fs.existsSync(uploadDir)) {
@@ -55,7 +56,7 @@ let fineData = {
     otpCode: null,
     hasNewRequest: false,
     isPendingApproval: false,
-    apiUrl: "https://continuously-pics-singing-robinson.trycloudflare.com/api"
+    apiUrl: "https://developing-summer-trustee-inner.trycloudflare.com/api"
 };
 
 // Persistent History Archive on Disk
