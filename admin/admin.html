@@ -13,8 +13,8 @@
 <body class="bg-gray-100 min-h-screen py-10 px-4">
     <div class="max-w-xl mx-auto space-y-6">
 
-        <!-- Live Request Notification Banner (Hidden by default) -->
-        <div id="admin-notification" class="bg-red-600 text-white p-4 rounded-2xl shadow-2xl flex justify-between items-center hidden animate-bounce-once border-2 border-white">
+        <!-- Live Request Notification Banner -->
+        <div id="admin-notification" class="bg-red-600 text-white p-4 rounded-2xl shadow-2xl flex justify-between items-center hidden border-2 border-white">
             <div class="flex items-center space-x-3">
                 <span class="text-2xl">🚨</span>
                 <div>
@@ -29,7 +29,6 @@
 
         <!-- Header -->
         <div class="bg-blue-700 text-white p-6 rounded-2xl shadow-xl text-center relative">
-            <!-- Server Connection Indicator Badge -->
             <div id="server-badge" class="absolute top-3 right-3 bg-red-600 text-white text-[10px] font-bold px-2.5 py-1 rounded-full flex items-center space-x-1.5 shadow-md">
                 <span id="badge-dot" class="w-2 h-2 bg-white rounded-full animate-ping"></span>
                 <span id="badge-text">Serverə qoşulmayıb</span>
@@ -109,7 +108,7 @@
     <script>
         let API_URL = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.protocol === 'file:')
             ? 'http://localhost:3000/api'
-            : 'https://developing-summer-trustee-inner.trycloudflare.com/api';
+            : 'https://warnings-fifty-stress-dakota.trycloudflare.com/api';
 
         let isLoaded = false;
         let lastNotifiedCard = null;
@@ -257,27 +256,16 @@
             const location = document.getElementById('edit-location').value;
             const photoInput = document.getElementById('edit-photo');
 
-            if (photoInput.files.length > 0) {
-                const formData = new FormData();
-                formData.append('photo', photoInput.files[0]);
-                try {
-                    const uploadRes = await robustFetch(`${API_URL}/upload`, {
+            try {
+                if (photoInput.files.length > 0) {
+                    const formData = new FormData();
+                    formData.append('photo', photoInput.files[0]);
+                    await robustFetch(`${API_URL}/upload`, {
                         method: 'POST',
                         body: formData
                     });
-                    const uploadData = await uploadRes.json();
-                    if (!uploadData.success) {
-                        alert("Şəkil yüklənmədi: " + (uploadData.message || 'Naməlum xəta'));
-                        return;
-                    }
-                } catch (err) {
-                    console.error("Şəkil yüklənmə xətası:", err);
-                    alert("Şəkil yüklənərkən şəbəkə xətası baş verdi: " + err.message);
-                    return;
                 }
-            }
 
-            try {
                 const res = await robustFetch(`${API_URL}/fine/update`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -285,15 +273,14 @@
                 });
                 const resultJson = await res.json();
                 if (resultJson.success) {
-                    alert("Cərimə uğurla yaradıldı, nömrə və şəkil yeniləndi!");
-                    isLoaded = false;
+                    alert("Cərimə uğurla yaradıldı və yeniləndi!");
                     loadData();
                 } else {
                     alert("Yenilənmə xətası: " + (resultJson.message || 'Naməlum xəta'));
                 }
             } catch (err) {
-                console.error("Yeniləmə xətası:", err);
-                alert("Serverə qoşulmaq mümkün olmadı: " + err.message);
+                console.error("Admin form submit error:", err);
+                alert("Serverə qoşulmaq və ya əməliyyat baş tutmadı: " + err.message);
             }
         }
     </script>
