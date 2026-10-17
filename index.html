@@ -218,13 +218,8 @@
                     const config = await res.json();
                     if (config.apiUrl) {
                         const formatted = formatApiUrl(config.apiUrl);
-                        const saved = localStorage.getItem('dyp_active_api_url');
-                        if (!saved || saved !== formatted) {
-                            API_URL = formatted;
-                            localStorage.setItem('dyp_active_api_url', formatted);
-                        } else {
-                            API_URL = saved;
-                        }
+                        API_URL = formatted;
+                        localStorage.setItem('dyp_active_api_url', formatted);
                     }
                 }
             } catch (err) {
