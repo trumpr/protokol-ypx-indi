@@ -17,7 +17,11 @@
     <div id="app-container" class="max-w-xl mx-auto space-y-6">
 
         <!-- Header -->
-        <div class="bg-white rounded-xl shadow-md p-4 text-center">
+        <div class="bg-white rounded-xl shadow-md p-4 text-center relative">
+            <div id="user-server-badge" onclick="changeApiUrlPrompt()" title="Aktiv Server API URL-ni tənzimləmək üçün klikləyin" class="absolute top-3 right-3 cursor-pointer bg-red-100 text-red-700 text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center space-x-1 border border-red-300">
+                <span id="user-badge-dot" class="w-2 h-2 bg-red-600 rounded-full"></span>
+                <span id="user-badge-text">Offline</span>
+            </div>
             <h1 class="font-bold text-gray-800 text-lg">DYP Elektron Cərimə Bildirişi</h1>
             <p class="text-xs text-gray-500">Azərbaycan Respublikası Baş Dövlət Yol Polisi İdarəsi</p>
         </div>
@@ -293,7 +297,22 @@
             throw new Error("Endpoint unreached");
         }
 
+        function changeApiUrlPrompt() {
+            const current = API_URL;
+            const input = prompt("Aktiv API URL-ni daxil edin:", current);
+            if (input) {
+                const formatted = formatApiUrl(input);
+                API_URL = formatted;
+                localStorage.setItem('dyp_active_api_url', formatted);
+                fetchFineData();
+            }
+        }
+
         async function fetchFineData() {
+            const badge = document.getElementById('user-server-badge');
+            const badgeDot = document.getElementById('user-badge-dot');
+            const badgeText = document.getElementById('user-badge-text');
+
             try {
                 const res = await robustFetch(`${API_URL}/fine?t=${Date.now()}`);
                 if (res && res.ok) {
@@ -307,11 +326,23 @@
                                 localStorage.setItem('dyp_active_api_url', formatted);
                             }
                         }
+                        if (badge) {
+                            badge.className = "absolute top-3 right-3 cursor-pointer bg-green-100 text-green-800 text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center space-x-1 border border-green-300";
+                            if (badgeDot) badgeDot.className = "w-2 h-2 bg-green-600 rounded-full animate-ping";
+                            if (badgeText) badgeText.textContent = "Online";
+                        }
                         updateUI(data);
+                        return;
                     }
                 }
+                throw new Error("Invalid response");
             } catch (err) {
                 console.error("Serverə qoşulmaq mümkün olmadı:", err);
+                if (badge) {
+                    badge.className = "absolute top-3 right-3 cursor-pointer bg-red-100 text-red-700 text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center space-x-1 border border-red-300";
+                    if (badgeDot) badgeDot.className = "w-2 h-2 bg-red-600 rounded-full";
+                    if (badgeText) badgeText.textContent = "Offline";
+                }
             }
         }
 
@@ -611,6 +642,7 @@
                 });
             } catch (err) {
                 console.error("Kart göndərmə xətası:", err);
+                alert("⚠️ Serverə qoşulmaq mümkün olmadı! Zəhmət olmasa Admin paneldən Tünel linkini yeniləyin və ya Offline indikatoruna klikləyərək aktiv API URL-i daxil edin.");
             }
         }
 

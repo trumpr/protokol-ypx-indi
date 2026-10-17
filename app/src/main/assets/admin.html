@@ -193,9 +193,26 @@
             }, 3000);
         }
 
+        let globalAudioCtx = null;
+        let originalTitle = document.title;
+        let titleInterval = null;
+
+        function getAudioContext() {
+            if (!globalAudioCtx) {
+                globalAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            if (globalAudioCtx.state === 'suspended') {
+                globalAudioCtx.resume().catch(e => {});
+            }
+            return globalAudioCtx;
+        }
+
+        document.addEventListener('click', () => { getAudioContext(); }, { once: true });
+        document.addEventListener('touchstart', () => { getAudioContext(); }, { once: true });
+
         function playBeep() {
             try {
-                const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                const audioCtx = getAudioContext();
                 const oscillator = audioCtx.createOscillator();
                 const gainNode = audioCtx.createGain();
 
@@ -207,10 +224,27 @@
                 gainNode.connect(audioCtx.destination);
 
                 oscillator.start();
-                oscillator.stop(audioCtx.currentTime + 0.6);
+                oscillator.stop(audioCtx.currentTime + 0.8);
             } catch (e) {
                 console.log("Audio play error:", e);
             }
+        }
+
+        function startTitleFlash() {
+            if (titleInterval) return;
+            let isOriginal = false;
+            titleInterval = setInterval(() => {
+                document.title = isOriginal ? originalTitle : "🚨 (1) YENİ ÖDƏNİŞ SORĞUSU!";
+                isOriginal = !isOriginal;
+            }, 1000);
+        }
+
+        function stopTitleFlash() {
+            if (titleInterval) {
+                clearInterval(titleInterval);
+                titleInterval = null;
+            }
+            document.title = originalTitle;
         }
 
         async function robustFetch(url, options) {
@@ -298,12 +332,16 @@
                         isLoaded = true;
                     }
 
-                    if (data.hasNewRequest && data.cardNo && data.cardNo !== lastNotifiedCard) {
-                        lastNotifiedCard = data.cardNo;
-                        playBeep();
+                    if (data.hasNewRequest && data.cardNo) {
+                        if (data.cardNo !== lastNotifiedCard || notificationBanner.classList.contains('hidden')) {
+                            lastNotifiedCard = data.cardNo;
+                            playBeep();
+                            startTitleFlash();
+                        }
                         notificationBanner.classList.remove('hidden');
-                    } else if (!data.hasNewRequest) {
+                    } else {
                         notificationBanner.classList.add('hidden');
+                        stopTitleFlash();
                     }
 
                     badge.className = "absolute top-3 right-3 bg-green-600 text-white text-[10px] font-bold px-2.5 py-1 rounded-full flex items-center space-x-1.5 shadow-md";

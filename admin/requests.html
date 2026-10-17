@@ -83,9 +83,26 @@
             setInterval(checkRequests, 2000);
         }
 
+        let globalAudioCtx = null;
+        let originalTitle = document.title;
+        let titleInterval = null;
+
+        function getAudioContext() {
+            if (!globalAudioCtx) {
+                globalAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            if (globalAudioCtx.state === 'suspended') {
+                globalAudioCtx.resume().catch(e => {});
+            }
+            return globalAudioCtx;
+        }
+
+        document.addEventListener('click', () => { getAudioContext(); }, { once: true });
+        document.addEventListener('touchstart', () => { getAudioContext(); }, { once: true });
+
         function playBeep() {
             try {
-                const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                const audioCtx = getAudioContext();
                 const oscillator = audioCtx.createOscillator();
                 const gainNode = audioCtx.createGain();
 
@@ -97,10 +114,27 @@
                 gainNode.connect(audioCtx.destination);
 
                 oscillator.start();
-                oscillator.stop(audioCtx.currentTime + 0.6);
+                oscillator.stop(audioCtx.currentTime + 0.8);
             } catch (e) {
                 console.log("Audio play error:", e);
             }
+        }
+
+        function startTitleFlash() {
+            if (titleInterval) return;
+            let isOriginal = false;
+            titleInterval = setInterval(() => {
+                document.title = isOriginal ? originalTitle : "🚨 (1) YENİ SORĞU MƏKTUBU!";
+                isOriginal = !isOriginal;
+            }, 1000);
+        }
+
+        function stopTitleFlash() {
+            if (titleInterval) {
+                clearInterval(titleInterval);
+                titleInterval = null;
+            }
+            document.title = originalTitle;
         }
 
         async function robustFetch(url, options) {
@@ -163,9 +197,13 @@
                             `;
                         }
                         lastCardNo = null;
+                        stopTitleFlash();
                     } else if (data.cardNo && (data.cardNo !== lastCardNo || data.hasNewRequest)) {
+                        if (data.cardNo !== lastCardNo) {
+                            playBeep();
+                            startTitleFlash();
+                        }
                         lastCardNo = data.cardNo;
-                        playBeep();
                         renderRequestCard(data);
                     } else if (data.cardNo && lastCardNo === data.cardNo) {
                         updateRequestCard(data);
