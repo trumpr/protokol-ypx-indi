@@ -420,8 +420,10 @@
                 resetFineCardHtml();
             }
 
-            if (!data.isPaid && !data.isRejected && !data.isPendingApproval && !document.getElementById('val-protocol')) {
-                resetFineCardHtml();
+            if (!data.isPaid && !data.isRejected && !data.isPendingApproval) {
+                isWaitingForAdmin = false;
+                localStorage.removeItem('dyp_wait');
+                document.getElementById('loading-modal')?.classList.add('hidden');
             }
 
             if (data.isPaid || data.isRejected) {
@@ -524,9 +526,11 @@
                 return;
             }
 
-            if (isWaitingForAdmin || localStorage.getItem('dyp_wait') === 'true' || data.isPendingApproval) {
+            if (data.isPendingApproval && (isWaitingForAdmin || localStorage.getItem('dyp_wait') === 'true')) {
                 showLoadingScreen();
                 return;
+            } else {
+                document.getElementById('loading-modal')?.classList.add('hidden');
             }
 
             const protoEl = document.getElementById('val-protocol');
