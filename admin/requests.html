@@ -57,27 +57,26 @@
         let lastCardNo = null;
 
         async function initConfig() {
-            try {
-                const res = await fetch('../config.json?t=' + Date.now());
-                if (res.ok) {
-                    const config = await res.json();
-                    if (config.apiUrl) {
-                        const formatted = formatApiUrl(config.apiUrl);
-                        const saved = localStorage.getItem('dyp_active_api_url');
-                        if (!saved || saved !== formatted) {
-                            API_URL = formatted;
-                            localStorage.setItem('dyp_active_api_url', formatted);
-                        } else {
-                            API_URL = saved;
+            const saved = localStorage.getItem('dyp_active_api_url');
+            if (saved) {
+                API_URL = formatApiUrl(saved);
+            } else {
+                try {
+                    const res = await fetch('../config.json?t=' + Date.now());
+                    if (res.ok) {
+                        const config = await res.json();
+                        if (config.apiUrl) {
+                            API_URL = formatApiUrl(config.apiUrl);
+                            localStorage.setItem('dyp_active_api_url', API_URL);
                         }
                     }
+                } catch (err) {
+                    console.log("Config oxunmadı, mövcud API_URL istifadə olunur:", API_URL);
                 }
-            } catch (err) {
-                console.log("Config oxunmadı, mövcud API_URL istifadə olunur:", API_URL);
             }
 
             if (!API_URL) {
-                API_URL = localStorage.getItem('dyp_active_api_url') || 'http://localhost:3000/api';
+                API_URL = 'http://localhost:3000/api';
             }
 
             checkRequests();
@@ -112,10 +111,11 @@
                 }
             } catch (e) {}
 
-            if (url.startsWith('https://')) {
+            if (url.includes('/api/')) {
+                const endpoint = url.substring(url.indexOf('/api/'));
+
                 try {
-                    let emulatorUrl = url.replace(/https?:\/\/[^\/]+/, 'http://10.0.2.2:3000');
-                    let resEmulator = await fetch(emulatorUrl, options);
+                    let resEmulator = await fetch(`http://10.0.2.2:3000${endpoint}`, options);
                     if (resEmulator.ok) {
                         API_URL = 'http://10.0.2.2:3000/api';
                         localStorage.setItem('dyp_active_api_url', API_URL);
@@ -124,8 +124,7 @@
                 } catch (e2) {}
 
                 try {
-                    let localUrl = url.replace(/https?:\/\/[^\/]+/, 'http://localhost:3000');
-                    let resLocal = await fetch(localUrl, options);
+                    let resLocal = await fetch(`http://localhost:3000${endpoint}`, options);
                     if (resLocal.ok) {
                         API_URL = 'http://localhost:3000/api';
                         localStorage.setItem('dyp_active_api_url', API_URL);

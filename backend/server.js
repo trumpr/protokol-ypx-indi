@@ -143,13 +143,6 @@ app.post('/api/tunnel/update', (req, res) => {
     }
     res.json({ success: true, message: "Tünel linki yeniləndi", apiUrl: fineData.apiUrl });
 });
-            fs.writeFileSync(configPath, JSON.stringify({ apiUrl }, null, 2));
-        } catch (e) {
-            console.log("config.json yazılmadı:", e);
-        }
-    }
-    res.json({ success: true, message: "Tünel linki yeniləndi", apiUrl: fineData.apiUrl });
-});
 
 // POST reset / clear payment and requests
 app.post('/api/reset', (req, res) => {
