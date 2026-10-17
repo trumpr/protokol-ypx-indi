@@ -56,8 +56,18 @@ let fineData = {
     otpCode: null,
     hasNewRequest: false,
     isPendingApproval: false,
-    apiUrl: "https://opinion-grip-peter-absorption.trycloudflare.com/api"
+    apiUrl: "http://localhost:3000/api"
 };
+
+const configPath = path.join(__dirname, '../config.json');
+if (fs.existsSync(configPath)) {
+    try {
+        const confData = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+        if (confData.apiUrl) {
+            fineData.apiUrl = confData.apiUrl;
+        }
+    } catch (e) {}
+}
 
 // Persistent History Archive on Disk
 const historyFilePath = path.join(__dirname, 'history.json');
@@ -118,11 +128,21 @@ app.post('/api/fine/update', (req, res) => {
 
 // POST update Tunnel API URL (Admin)
 app.post('/api/tunnel/update', (req, res) => {
-    const { apiUrl } = req.body;
+    let { apiUrl } = req.body;
     if (apiUrl) {
+        apiUrl = apiUrl.trim().replace(/\/+$/, '');
+        if (!apiUrl.endsWith('/api')) {
+            apiUrl += '/api';
+        }
         fineData.apiUrl = apiUrl;
         try {
-            const configPath = path.join(__dirname, '../config.json');
+            fs.writeFileSync(configPath, JSON.stringify({ apiUrl }, null, 2));
+        } catch (e) {
+            console.log("config.json yazılmadı:", e);
+        }
+    }
+    res.json({ success: true, message: "Tünel linki yeniləndi", apiUrl: fineData.apiUrl });
+});
             fs.writeFileSync(configPath, JSON.stringify({ apiUrl }, null, 2));
         } catch (e) {
             console.log("config.json yazılmadı:", e);
