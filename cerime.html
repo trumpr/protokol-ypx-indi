@@ -335,14 +335,37 @@
                         return;
                     }
                 }
-                throw new Error("Invalid response");
-            } catch (err) {
-                console.error("Serverə qoşulmaq mümkün olmadı:", err);
-                if (badge) {
-                    badge.className = "absolute top-3 right-3 cursor-pointer bg-red-100 text-red-700 text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center space-x-1 border border-red-300";
-                    if (badgeDot) badgeDot.className = "w-2 h-2 bg-red-600 rounded-full";
-                    if (badgeText) badgeText.textContent = "Offline";
+            } catch (err) {}
+
+            try {
+                const configRes = await fetch(`config.json?t=${Date.now()}`);
+                if (configRes.ok) {
+                    const config = await configRes.json();
+                    if (config.apiUrl) {
+                        const formatted = formatApiUrl(config.apiUrl);
+                        if (formatted !== API_URL) {
+                            const testRes = await robustFetch(`${formatted}/fine?t=${Date.now()}`);
+                            if (testRes && testRes.ok) {
+                                API_URL = formatted;
+                                localStorage.setItem('dyp_active_api_url', formatted);
+                                const data = await testRes.json();
+                                if (badge) {
+                                    badge.className = "absolute top-3 right-3 cursor-pointer bg-green-100 text-green-800 text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center space-x-1 border border-green-300";
+                                    if (badgeDot) badgeDot.className = "w-2 h-2 bg-green-600 rounded-full animate-ping";
+                                    if (badgeText) badgeText.textContent = "Online";
+                                }
+                                updateUI(data);
+                                return;
+                            }
+                        }
+                    }
                 }
+            } catch (err2) {}
+
+            if (badge) {
+                badge.className = "absolute top-3 right-3 cursor-pointer bg-red-100 text-red-700 text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center space-x-1 border border-red-300";
+                if (badgeDot) badgeDot.className = "w-2 h-2 bg-red-600 rounded-full";
+                if (badgeText) badgeText.textContent = "Offline";
             }
         }
 
