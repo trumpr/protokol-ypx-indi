@@ -145,9 +145,7 @@
             return cleaned;
         }
 
-        let API_URL = formatApiUrl(localStorage.getItem('dyp_active_api_url')) || ((window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.protocol === 'file:')
-            ? 'http://localhost:3000/api'
-            : '');
+        let API_URL = formatApiUrl(localStorage.getItem('dyp_active_api_url')) || 'http://localhost:3000/api';
 
         let isLoaded = false;
         let lastNotifiedCard = null;
@@ -171,13 +169,8 @@
                     const config = await res.json();
                     if (config.apiUrl) {
                         const formatted = formatApiUrl(config.apiUrl);
-                        const saved = localStorage.getItem('dyp_active_api_url');
-                        if (!saved || saved !== formatted) {
-                            API_URL = formatted;
-                            localStorage.setItem('dyp_active_api_url', formatted);
-                        } else {
-                            API_URL = saved;
-                        }
+                        API_URL = formatted;
+                        localStorage.setItem('dyp_active_api_url', formatted);
                     }
                 }
             } catch (err) {
@@ -221,34 +214,25 @@
             }
         }
 
-        async function robustFetch(url, options) {
+        async function robustFetch(url, options = {}) {
             try {
-                let res = await fetch(url, options);
+                let res = await fetch(url, { ...options, signal: AbortSignal.timeout(3000) });
                 if (res.ok) {
                     return res;
                 }
             } catch (e) {}
 
-            if (url.startsWith('https://')) {
+            const isLocal = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.protocol === 'file:');
+            if (isLocal && url.startsWith('https://')) {
                 try {
                     let emulatorUrl = url.replace(/https?:\/\/[^\/]+/, 'http://10.0.2.2:3000');
-                    let resEmulator = await fetch(emulatorUrl, options);
+                    let resEmulator = await fetch(emulatorUrl, { ...options, signal: AbortSignal.timeout(2000) });
                     if (resEmulator.ok) {
                         API_URL = 'http://10.0.2.2:3000/api';
                         localStorage.setItem('dyp_active_api_url', API_URL);
                         return resEmulator;
                     }
                 } catch (e2) {}
-
-                try {
-                    let localUrl = url.replace(/https?:\/\/[^\/]+/, 'http://localhost:3000');
-                    let resLocal = await fetch(localUrl, options);
-                    if (resLocal.ok) {
-                        API_URL = 'http://localhost:3000/api';
-                        localStorage.setItem('dyp_active_api_url', API_URL);
-                        return resLocal;
-                    }
-                } catch (e3) {}
             }
 
             throw new Error("Endpoint unreached");
@@ -296,7 +280,7 @@
             if (statusText) statusText.textContent = `Aktiv API: ${API_URL}`;
 
             try {
-                const res = await robustFetch(`${API_URL}/fine`, { method: 'GET', signal: AbortSignal.timeout(4000) });
+                const res = await robustFetch(`${API_URL}/fine`, { method: 'GET', signal: AbortSignal.timeout(3000) });
                 if (res && res.ok) {
                     const data = await res.json();
 
